@@ -8,10 +8,20 @@ const app = express();
 app.use(express.json());
 
 // Database Connection
-mongoose.connect('mongodb://127.0.0.1:27017/taskflow_db')
-  .then(() => console.log('✅ Connected to MongoDB!'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+require('dotenv').config(); // هاد السطر ضروري يكون هو الأول في الملف
+const express = require('express');
+const mongoose = require('mongoose');
 
+const app = express();
+
+// استخدام المتغير المخبي بدل الرابط المباشر
+const mongoURI = process.env.MONGO_URI; 
+
+mongoose.connect(mongoURI)
+  .then(() => console.log('Connexion à MongoDB réussie (Secure mode) !'))
+  .catch((err) => console.log('Erreur de connexion :', err));
+
+// باقي الكود ديالك (app.get, app.listen...)
 // --- API Routes (CRUD) ---
 
 // 1. Create - إضافة مهمة جديدة
