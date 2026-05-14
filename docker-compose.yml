@@ -1,0 +1,6 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: taskflow_db
+    ports:
+      - "27017:27017"
