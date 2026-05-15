@@ -1,6 +1,23 @@
+
 services:
-  mongodb:
-    image: mongo:latest
+ 
+  db:
+    image: mongo
     container_name: taskflow_db
     ports:
       - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  app:
+    build: .
+    container_name: taskflow_app
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=mongodb://db:27017/taskflow_db
+    depends_on:
+      - db
+
+volumes:
+  mongo-data:

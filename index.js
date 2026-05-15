@@ -1,21 +1,59 @@
+require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
 const Task = require('./models/Task');
 
 const app = express();
+app.use(express.static('.'));
 
-// Middleware
+// --- 1. Middleware ---
 app.use(express.json());
 
-// Database Connection
-mongoose.connect('mongodb://127.0.0.1:27017/taskflow_db')
-  .then(() => console.log('✅ Connected to MongoDB!'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+// --- 2. Database Connection ---
+const mongoURI = process.env.MONGO_URI; 
+mongoose.connect(mongoURI)
+  .then(() => console.log('✅ Connexion à MongoDB réussie !'))
+  .catch((err) => console.log('❌ Erreur de connexion :', err));
 
-// --- API Routes (CRUD) ---
+// --- 3. Health Check ---
+app.get('/', (req, res) => {
+    res.send('<h1>🚀 TaskFlow API is Live!</h1>');
+});
 
-// 1. Create - إضافة مهمة جديدة
-app.post('/tasks', async (req, res) => {
+// --- 4. API Routes (Tâches - Fonctionnalité 3) ---
+
+// [GET] 
+// [GET] 
+app.get('/api/projects/:projectId/tasks', async (req, res) => {
+  try {
+    const { status, priority, search } = req.query; 
+    let query = { project: req.params.projectId };
+
+    
+    if (status) query.status = status;
+    
+    //
+    if (priority) query.priority = priority;
+    
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } }, 
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const tasks = await Task.find(query)
+                            .populate('assignedTo', 'name email')
+                            .sort({ createdAt: -1 });
+
+    res.status(200).json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur lors de la récupération des tâches", details: err.message });
+  }
+});
+
+// [POST] 
+app.post('/api/tasks', async (req, res) => {
   try {
     const newTask = new Task(req.body);
     const savedTask = await newTask.save();
@@ -25,55 +63,45 @@ app.post('/tasks', async (req, res) => {
   }
 });
 
-// 2. Read All - جلب جميع المهام
-app.get('/tasks', async (req, res) => {
+// [PATCH] 
+app.patch('/api/tasks/:id/status', async (req, res) => {
   try {
-    const tasks = await Task.find().sort({ createdAt: -1 }); // الترتيب من الأحدث للأقدم
-    res.status(200).json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-});
+    const { status } = req.body;
+    const validStatuses = ['à faire', 'en cours', 'terminé'];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Statut invalide" });
+    }
 
-// 3. Read Single - جلب مهمة واحدة بالمعرف
-app.get('/tasks/:id', async (req, res) => {
-  try {
-    const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ message: "Task not found" });
-    res.status(200).json(task);
-  } catch (err) {
-    res.status(500).json({ error: "Invalid ID format", details: err.message });
-  }
-});
-
-// 4. Update - تعديل مهمة (مثلاً تغيير الحالة)
-app.put('/tasks/:id', async (req, res) => {
-  try {
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id, 
-      req.body, 
-    { returnDocument: 'after', runValidators: true }// runValidators كتأكد أن البيانات الجديدة صحيحة
+      { status: status }, 
+      { new: true }
     );
+
     if (!updatedTask) return res.status(404).json({ message: "Task not found" });
     res.status(200).json(updatedTask);
   } catch (err) {
-    res.status(400).json({ error: "Update failed", details: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
-// 5. Delete - مسح مهمة
-app.delete('/tasks/:id', async (req, res) => {
+// [DELETE] 
+app.delete('/api/tasks/:id', async (req, res) => {
   try {
     const deletedTask = await Task.findByIdAndDelete(req.params.id);
     if (!deletedTask) return res.status(404).json({ message: "Task not found" });
     res.status(200).json({ message: "Task deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: "Delete failed", details: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
+
+// --- Authentication Routes ---
+app.use('/api/auth', require('./routes/auth'));
 
 // Server Configuration
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 TaskFlow API is running on http://localhost:${PORT}`);
+  console.log(`🚀 TaskFlow API running on port ${PORT}`);
 });

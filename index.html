@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Gestion de Projets</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>TaskFlow 🚀</h1>
+        <p>Plateforme collaborative pour SMI S4</p>
+    </header>
+
+    <main>
+        <section id="task-form">
+            <h2>Ajouter une nouvelle tâche</h2>
+            <input type="text" id="taskInput" placeholder="Nom de la tâche...">
+            <button onclick="addTask()">Ajouter</button>
+        </section>
+
+        <section id="task-list">
+            <h2>Mes Tâches</h2>
+            <ul id="list">
+                <li>Exemple de tâche (Backend non relié)</li>
+            </ul>
+        </section>
+    </main>
+
+    <script>
+        function addTask() {
+            alert("Bientôt : Cette tâche sera envoyée à MongoDB !");
+        }
+    </script>
+</body>
+</html>
