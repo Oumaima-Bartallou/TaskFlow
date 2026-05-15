@@ -22,32 +22,36 @@ app.get('/', (req, res) => {
 // --- 4. API Routes (Tâches - Fonctionnalité 3) ---
 
 // [GET] 
-// [GET] 
 app.get('/api/projects/:projectId/tasks', async (req, res) => {
   try {
-    const { status, priority, search } = req.query; 
+    const { status, priority, search, page = 1, limit = 5 } = req.query; 
     let query = { project: req.params.projectId };
 
-    
     if (status) query.status = status;
-    
-    //
     if (priority) query.priority = priority;
-    
     if (search) {
       query.$or = [
-        { title: { $regex: search, $options: 'i' } }, 
+        { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } }
       ];
     }
 
+    // --- Pagination ---
+    const total = await Task.countDocuments(query);
     const tasks = await Task.find(query)
                             .populate('assignedTo', 'name email')
+                            .limit(limit * 1) 
+                            .skip((page - 1) * limit)
                             .sort({ createdAt: -1 });
 
-    res.status(200).json(tasks);
+    res.status(200).json({
+      data: tasks,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (err) {
-    res.status(500).json({ error: "Erreur lors de la récupération des tâches", details: err.message });
+    res.status(500).json({ error: "Erreur serveur", details: err.message });
   }
 });
 
