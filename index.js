@@ -75,6 +75,9 @@ app.delete('/tasks/:id', async (req, res) => {
   }
 });
 
+// --- Authentication Routes ---
+app.use('/api/auth', require('./routes/auth'));
+
 // Server Configuration
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
