@@ -1,3 +1,4 @@
+require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
 const Task = require('./models/Task');
@@ -8,23 +9,15 @@ const app = express();
 app.use(express.json());
 
 // Database Connection
-require('dotenv').config(); // هاد السطر ضروري يكون هو الأول في الملف
-const express = require('express');
-const mongoose = require('mongoose');
-
-const app = express();
-
-// استخدام المتغير المخبي بدل الرابط المباشر
 const mongoURI = process.env.MONGO_URI; 
 
 mongoose.connect(mongoURI)
-  .then(() => console.log('Connexion à MongoDB réussie (Secure mode) !'))
-  .catch((err) => console.log('Erreur de connexion :', err));
+  .then(() => console.log('✅ Connexion à MongoDB réussie (Docker Mode) !'))
+  .catch((err) => console.log('❌ Erreur de connexion :', err));
 
-// باقي الكود ديالك (app.get, app.listen...)
 // --- API Routes (CRUD) ---
 
-// 1. Create - إضافة مهمة جديدة
+// 1. Create 
 app.post('/tasks', async (req, res) => {
   try {
     const newTask = new Task(req.body);
@@ -35,17 +28,17 @@ app.post('/tasks', async (req, res) => {
   }
 });
 
-// 2. Read All - جلب جميع المهام
+// 2. Read All 
 app.get('/tasks', async (req, res) => {
   try {
-    const tasks = await Task.find().sort({ createdAt: -1 }); // الترتيب من الأحدث للأقدم
+    const tasks = await Task.find().sort({ createdAt: -1 });
     res.status(200).json(tasks);
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
-// 3. Read Single - جلب مهمة واحدة بالمعرف
+// 3. Read Single 
 app.get('/tasks/:id', async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -56,13 +49,13 @@ app.get('/tasks/:id', async (req, res) => {
   }
 });
 
-// 4. Update - تعديل مهمة (مثلاً تغيير الحالة)
+// 4. Update 
 app.put('/tasks/:id', async (req, res) => {
   try {
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id, 
       req.body, 
-    { returnDocument: 'after', runValidators: true }// runValidators كتأكد أن البيانات الجديدة صحيحة
+      { returnDocument: 'after', runValidators: true }
     );
     if (!updatedTask) return res.status(404).json({ message: "Task not found" });
     res.status(200).json(updatedTask);
@@ -71,7 +64,7 @@ app.put('/tasks/:id', async (req, res) => {
   }
 });
 
-// 5. Delete - مسح مهمة
+// 5. Delete 
 app.delete('/tasks/:id', async (req, res) => {
   try {
     const deletedTask = await Task.findByIdAndDelete(req.params.id);
@@ -85,5 +78,5 @@ app.delete('/tasks/:id', async (req, res) => {
 // Server Configuration
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 TaskFlow API is running on http://localhost:${PORT}`);
+  console.log(`🚀 TaskFlow API is running on port ${PORT}`);
 });
