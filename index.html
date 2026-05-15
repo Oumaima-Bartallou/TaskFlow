@@ -5,31 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaskFlow - Gestion de Projets</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Styles de base pour l'interface */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; }
+        #draft-msg { color: #27ae60; font-size: 0.9em; font-style: italic; min-height: 20px; }
+        .task-item { background: #fff; margin: 10px 0; padding: 15px; border-radius: 5px; border-left: 5px solid #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        section { margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; }
+    </style>
 </head>
 <body>
     <header>
         <h1>TaskFlow 🚀</h1>
-        <p>Plateforme collaborative pour SMI S4</p>
+        <p>Espace de travail de <strong>Oumaima</strong> - Gestion des Tâches</p>
     </header>
 
     <main>
         <section id="task-form">
             <h2>Ajouter une nouvelle tâche</h2>
-            <input type="text" id="taskInput" placeholder="Nom de la tâche...">
-            <button onclick="addTask()">Ajouter</button>
+            
+            <input type="text" id="taskTitle" placeholder="Titre de la tâche..." oninput="saveBrouillon()">
+            <textarea id="taskDesc" placeholder="Description de la tâche..." oninput="saveBrouillon()"></textarea>
+            
+            <select id="taskPriority">
+                <option value="basse">Basse</option>
+                <option value="moyenne" selected>Moyenne</option>
+                <option value="haute">Haute</option>
+            </select>
+
+            <button onclick="addTask()">Ajouter à MongoDB</button>
+            
+            <p id="draft-msg"></p>
         </section>
 
+        <hr>
+
         <section id="task-list">
-            <h2>Mes Tâches</h2>
-            <ul id="list">
-                <li>Exemple de tâche (Backend non relié)</li>
-            </ul>
+            <h2>🔍 Rechercher & Filtrer (Fonctionnalité 6)</h2>
+            <input type="text" id="searchInput" placeholder="Chercher par titre ou description..." onkeyup="loadTasks()">
+            
+            <div id="list">
+                </div>
         </section>
     </main>
 
     <script>
+        // --- 1. SAUVEGARDE AUTOMATIQUE (LocalStorage) ---
+        // Cette fonction enregistre les données localement pour éviter la perte d'infos
+        function saveBrouillon() {
+            const draft = {
+                title: document.getElementById('taskTitle').value,
+                desc: document.getElementById('taskDesc').value
+            };
+            // Stockage sous forme de chaîne JSON
+            localStorage.setItem('taskDraft_Oumaima', JSON.stringify(draft));
+            document.getElementById('draft-msg').innerText = "📝 Brouillon enregistré automatiquement...";
+            
+            // Effacer le message après 2 secondes
+            setTimeout(() => { document.getElementById('draft-msg').innerText = ""; }, 2000);
+        }
+
+        // --- 2. CHARGEMENT INITIAL ---
+        // Au chargement de la page, on récupère le brouillon et les tâches existantes
+        window.onload = function() {
+            const savedDraft = JSON.parse(localStorage.getItem('taskDraft_Oumaima'));
+            if (savedDraft) {
+                document.getElementById('taskTitle').value = savedDraft.title || "";
+                document.getElementById('taskDesc').value = savedDraft.desc || "";
+            }
+            loadTasks(); // Appeler l'API Backend
+        };
+
+        // --- 3. RÉCUPÉRATION DES TÂCHES (Fetch API) ---
+        // Communiquer avec le Backend pour afficher les tâches filtrées
+        async function loadTasks() {
+            const search = document.getElementById('searchInput').value;
+            const projectId = "6644f1234567890123456789"; // ID temporaire pour le test
+            
+            try {
+                const response = await fetch(`/api/projects/${projectId}/tasks?search=${search}`);
+                const result = await response.json();
+                
+                const listElement = document.getElementById('list');
+                listElement.innerHTML = ""; // Vider la liste avant affichage
+
+                if (result.data && result.data.length > 0) {
+                    result.data.forEach(task => {
+                        const div = document.createElement('div');
+                        div.className = "task-item";
+                        div.innerHTML = `<strong>${task.title}</strong> <br> 
+                                        <small>Priorité: ${task.priority} | Statut: ${task.status}</small>`;
+                        listElement.appendChild(div);
+                    });
+                } else {
+                    listElement.innerHTML = "<p>Aucune tâche trouvée.</p>";
+                }
+            } catch (err) {
+                console.error("Erreur de connexion au serveur:", err);
+            }
+        }
+
+        // --- 4. AJOUT DE TÂCHE ---
         function addTask() {
-            alert("Bientôt : Cette tâche sera envoyée à MongoDB !");
+            alert("Prochaine étape : Envoyer les données vers le serveur avec fetch(POST) !");
         }
     </script>
 </body>
