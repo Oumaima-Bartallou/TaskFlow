@@ -22,14 +22,32 @@ app.get('/', (req, res) => {
 // --- 4. API Routes (Tâches - Fonctionnalité 3) ---
 
 // [GET] 
+// [GET] 
 app.get('/api/projects/:projectId/tasks', async (req, res) => {
   try {
-    const tasks = await Task.find({ project: req.params.projectId })
+    const { status, priority, search } = req.query; 
+    let query = { project: req.params.projectId };
+
+    
+    if (status) query.status = status;
+    
+    //
+    if (priority) query.priority = priority;
+    
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } }, 
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const tasks = await Task.find(query)
                             .populate('assignedTo', 'name email')
                             .sort({ createdAt: -1 });
+
     res.status(200).json(tasks);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Erreur lors de la récupération des tâches", details: err.message });
   }
 });
 
