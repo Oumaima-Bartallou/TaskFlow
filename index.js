@@ -5,20 +5,23 @@ const Task = require('./models/Task');
 
 const app = express();
 
-// Middleware
+// --- 1. Middleware ---
+
 app.use(express.json());
 
-// Database Connection
+// --- 2. Database Connection ---
 const mongoURI = process.env.MONGO_URI; 
 
 mongoose.connect(mongoURI)
   .then(() => console.log('✅ Connexion à MongoDB réussie (Docker Mode) !'))
   .catch((err) => console.log('❌ Erreur de connexion :', err));
 
-// --- API Routes (CRUD) ---
 
-// 1. Create 
-app.post('/tasks', async (req, res) => {
+app.get('/', (req, res) => {
+    res.send('<h1>🚀 TaskFlow API is Live!</h1><p>Server is running and MongoDB is connected.</p>');
+});
+
+app.post('/api/tasks', async (req, res) => {
   try {
     const newTask = new Task(req.body);
     const savedTask = await newTask.save();
@@ -28,8 +31,7 @@ app.post('/tasks', async (req, res) => {
   }
 });
 
-// 2. Read All 
-app.get('/tasks', async (req, res) => {
+app.get('/api/tasks', async (req, res) => {
   try {
     const tasks = await Task.find().sort({ createdAt: -1 });
     res.status(200).json(tasks);
@@ -38,8 +40,8 @@ app.get('/tasks', async (req, res) => {
   }
 });
 
-// 3. Read Single 
-app.get('/tasks/:id', async (req, res) => {
+
+app.get('/api/tasks/:id', async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: "Task not found" });
@@ -49,8 +51,8 @@ app.get('/tasks/:id', async (req, res) => {
   }
 });
 
-// 4. Update 
-app.put('/tasks/:id', async (req, res) => {
+
+app.put('/api/tasks/:id', async (req, res) => {
   try {
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id, 
@@ -64,8 +66,7 @@ app.put('/tasks/:id', async (req, res) => {
   }
 });
 
-// 5. Delete 
-app.delete('/tasks/:id', async (req, res) => {
+app.delete('/api/tasks/:id', async (req, res) => {
   try {
     const deletedTask = await Task.findByIdAndDelete(req.params.id);
     if (!deletedTask) return res.status(404).json({ message: "Task not found" });
@@ -75,11 +76,8 @@ app.delete('/tasks/:id', async (req, res) => {
   }
 });
 
-// Server Configuration
+
 const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => {
-    res.send('<h1>🚀 TaskFlow API is Live!</h1><p>Server is running and MongoDB is connected.</p>');
-});
 app.listen(PORT, () => {
   console.log(`🚀 TaskFlow API is running on port ${PORT}`);
 });
