@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const Task = require('./models/Task');
 
 const app = express();
+app.use(express.static('.'));
 
 // Middleware
 app.use(express.json());
