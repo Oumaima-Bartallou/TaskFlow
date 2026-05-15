@@ -77,6 +77,9 @@ app.delete('/tasks/:id', async (req, res) => {
 
 // Server Configuration
 const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => {
+    res.send('<h1>🚀 TaskFlow API is Live!</h1><p>Server is running and MongoDB is connected.</p>');
+});
 app.listen(PORT, () => {
   console.log(`🚀 TaskFlow API is running on port ${PORT}`);
 });
