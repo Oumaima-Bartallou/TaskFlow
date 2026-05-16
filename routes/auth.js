@@ -50,6 +50,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: "Identifiants invalides." });
     }
 
+    
     const token = jwt.sign(
       { id: user._id, name: user.name, email: user.email },
       process.env.JWT_SECRET,
@@ -70,6 +71,7 @@ router.post('/login', async (req, res) => {
         message: "Erreur serveur lors de la connexion.", 
         error: error.message 
     });
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
   }
 });
 
