@@ -1,14 +1,21 @@
-require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
 const Task = require('./models/Task');
+const cors = require('cors');
 
 const app = express();
 app.use(express.static('.'));
 
 // --- 1. Middleware Global ---
 app.use(cors()); 
+
+app.use(cors({
+    origin: '*', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 app.use(express.static(__dirname));
 
@@ -18,10 +25,7 @@ mongoose.connect(mongoURI)
   .then(() => console.log('✅ Connexion à MongoDB réussie !'))
   .catch((err) => console.log('❌ Erreur de connexion :', err));
 
-// --- 3. Health Check ---
-app.get('/', (req, res) => {
-    res.send('<h1>🚀 TaskFlow API is Live!</h1>');
-});
+const MONGO_URI = "mongodb+srv://... (الرابط ديالك)"; 
 
 // --- 4. API Routes ---
 app.use('/api/auth', require('./routes/auth'));
@@ -58,19 +62,19 @@ app.patch('/api/tasks/:id/status', async (req, res) => {
     
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Statut invalide" });
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("✅ MongoDB Connecté !"))
+    .catch(err => console.error("❌ Erreur MongoDB:", err));
+
+
+app.post('/api/tasks', async (req, res) => {
+    try {
+        console.log("Données reçues:", req.body);
+       
+        res.status(201).json({ success: true, message: "Taskflow a reçu la tâche !" });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
-
-    const updatedTask = await Task.findByIdAndUpdate(
-      req.params.id, 
-      { status: status }, 
-      { new: true }
-    );
-
-    if (!updatedTask) return res.status(404).json({ message: "Task not found" });
-    res.status(200).json(updatedTask);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
 });
 
 // [DELETE] 
@@ -89,6 +93,7 @@ app.use('/api/auth', require('./routes/auth'));
 
 // Server Configuration
 const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 TaskFlow API running on port ${PORT}`);
+    console.log(`🚀 Serveur prêt sur http://localhost:${PORT}`);
 });

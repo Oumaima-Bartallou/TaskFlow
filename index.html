@@ -2,11 +2,32 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow - Gestion de Projets</title>
-    <link rel="stylesheet" href="style.css">
+    <title>TaskFlow Pro - SMI S4</title>
+    <style>
+        /* Styles CSS pour une interface moderne */
+        :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: var(--dark); }
+        .container { max-width: 650px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin: auto; }
+        
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
+        .btn-add { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+        /* Notification styles */
+        #notification-msg { text-align: center; font-weight: bold; height: 25px; margin: 15px 0; }
+
+        /* Task Cards styles */
+        .task-card { background: #fff; border-left: 6px solid var(--primary); padding: 18px; margin-top: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .task-card.urgent { border-left-color: var(--danger); background: #fff5f5; }
+        .task-card.completed { border-left-color: var(--success); opacity: 0.6; background: #f9f9f9; }
+        
+        .task-info { font-size: 13px; color: #718096; margin: 8px 0; }
+        .actions { margin-top: 12px; display: flex; gap: 10px; }
+        .btn-status { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; flex: 1; }
+        .btn-delete { background: #cbd5e0; color: #4a5568; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+    </style>
 </head>
 <body>
+<<<<<<< HEAD
     <header>
         <h1>TaskFlow 🚀</h1>
         <p>Plateforme collaborative pour SMI S4</p>
@@ -100,5 +121,173 @@
         window.location.href = 'login.html';
     });
     </script>
+=======
+
+<div class="container">
+    <h2>🚀 TaskFlow SMI S4</h2>
+    
+    <input type="text" id="taskTitle" placeholder="Titre de la tâche...">
+    <textarea id="taskDesc" placeholder="Description détaillée..."></textarea>
+    <select id="taskPriority">
+        <option value="Normal">🟢 Priorité: Normal</option>
+        <option value="Urgent">🔴 Priorité: URGENT</option>
+    </select>
+    <button class="btn-add" onclick="addTask()">Ajouter au planning</button>
+    
+    <div id="notification-msg"></div>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="🔍 Rechercher une tâche...">
+    </div>
+
+    <div id="taskList"></div>
+</div>
+
+<script>
+    // Initialisation : Charger les tâches depuis le LocalStorage ou créer un tableau vide
+    let myTasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
+
+    /**
+     * AJOUTER UNE TÂCHE (Fonctionnalité 3 & 7)
+     */
+    function addTask() {
+        const title = document.getElementById('taskTitle').value;
+        const desc = document.getElementById('taskDesc').value;
+        const priority = document.getElementById('taskPriority').value;
+
+        // Validation simple
+        if (!title) {
+            showNotification("⚠️ Le titre est obligatoire", "urgent");
+            return;
+        }
+
+        // Création de l'objet tâche avec horodatage (Fonctionnalité 10)
+        const newTask = {
+            id: Date.now(), // ID unique basé sur le temps
+            title: title,
+            description: desc,
+            priority: priority,
+            status: 'En cours',
+            createdAt: new Date().toLocaleString(), // Date de création
+            completedAt: null // Sera rempli une fois terminée
+        };
+
+        // Ajouter au début du tableau et sauvegarder
+        myTasks.unshift(newTask);
+        saveAndRender();
+        
+        // Réinitialiser les champs du formulaire
+        document.getElementById('taskTitle').value = "";
+        document.getElementById('taskDesc').value = "";
+
+        // Notification visuelle (Fonctionnalité 9)
+        if (priority === 'Urgent') {
+            showNotification("🔥 Tâche URGENTE ajoutée !", "urgent");
+        } else {
+            showNotification("✅ Tâche ajoutée avec succès");
+        }
+    }
+
+    /**
+     * CHANGER LE STATUT (En cours / Terminée)
+     */
+    function toggleStatus(id) {
+        myTasks = myTasks.map(task => {
+            if (task.id === id) {
+                if (task.status === 'En cours') {
+                    task.status = 'Terminée';
+                    task.completedAt = new Date().toLocaleString(); // Enregistrer la date de fin
+                    showNotification("🎉 Félicitations ! Tâche terminée");
+                } else {
+                    task.status = 'En cours';
+                    task.completedAt = null; // Réinitialiser la date de fin
+                    showNotification("🔄 Tâche remise en cours");
+                }
+            }
+            return task;
+        });
+        saveAndRender();
+    }
+
+    /**
+     * SUPPRIMER UNE TÂCHE
+     */
+    function deleteTask(id) {
+        if (confirm("Voulez-vous supprimer cette tâche ?")) {
+            myTasks = myTasks.filter(task => task.id !== id);
+            saveAndRender();
+            showNotification("🗑️ Tâche supprimée", "urgent");
+        }
+    }
+
+    /**
+     * AFFICHER LES NOTIFICATIONS (Fonctionnalité 9)
+     */
+    function showNotification(msg, type = 'success') {
+        const n = document.getElementById('notification-msg');
+        n.innerText = msg;
+        // Changer la couleur selon le type (Success ou Danger)
+        n.style.color = (type === 'urgent') ? "#e74c3c" : "#27ae60";
+        // Faire disparaître après 3 secondes
+        setTimeout(() => n.innerText = "", 3000);
+    }
+
+    /**
+     * RECHERCHE ET FILTRAGE (Fonctionnalité 6)
+     */
+    function filterTasks() {
+        const text = document.getElementById('searchInput').value.toLowerCase();
+        const cards = document.querySelectorAll('.task-card');
+        cards.forEach(card => {
+            const content = card.innerText.toLowerCase();
+            // Afficher ou masquer selon la correspondance
+            card.style.display = content.includes(text) ? 'block' : 'none';
+        });
+    }
+
+    /**
+     * SAUVEGARDER DANS LOCALSTORAGE ET ACTUALISER L'AFFICHAGE (Fonctionnalité 7)
+     */
+    function saveAndRender() {
+        localStorage.setItem('my_tasks', JSON.stringify(myTasks));
+        renderTasks();
+    }
+
+    /**
+     * RENDU DE LA LISTE DANS LE HTML
+     */
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = ""; // Vider la liste avant d'afficher
+
+        myTasks.forEach(task => {
+            const isCompleted = task.status === 'Terminée';
+            const isUrgent = task.priority === 'Urgent';
+
+            list.innerHTML += `
+                <div class="task-card ${isCompleted ? 'completed' : ''} ${isUrgent ? 'urgent' : ''}">
+                    <strong>${isUrgent ? '⚠️ ' : ''}${task.title}</strong>
+                    <p style="margin: 5px 0;">${task.description || '<i>Aucune description</i>'}</p>
+                    
+                    <div class="task-info">
+                        🕒 Créée le: <b>${task.createdAt}</b><br>
+                        ${task.completedAt ? `✅ Terminée le: <b>${task.completedAt}</b>` : `⏳ État: <b>${task.status}</b>`}
+                    </div>
+                    
+                    <div class="actions">
+                        <button class="btn-status" onclick="toggleStatus(${task.id})">
+                            ${isCompleted ? 'Réouvrir' : 'Terminer'}
+                        </button>
+                        <button class="btn-delete" onclick="deleteTask(${task.id})">Supprimer</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // Charger les tâches au démarrage de la page
+    window.onload = renderTasks;
+</script>
+>>>>>>> feature/filtrage-backend
 </body>
 </html>
