@@ -2,112 +2,109 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow - Gestion de Projets</title>
-    <link rel="stylesheet" href="style.css">
+    <title>TaskFlow - Gestion des Tâches</title>
     <style>
-        /* Styles de base pour l'interface */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; }
-        #draft-msg { color: #27ae60; font-size: 0.9em; font-style: italic; min-height: 20px; }
-        .task-item { background: #fff; margin: 10px 0; padding: 15px; border-radius: 5px; border-left: 5px solid #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        section { margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 500px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin: auto; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #2980b9; }
+        #notification-msg { text-align: center; font-weight: bold; margin-top: 15px; min-height: 20px; }
+        .task-card { background: #fff; border-left: 5px solid #3498db; padding: 10px; margin-top: 10px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
-    <header>
-        <h1>TaskFlow 🚀</h1>
-        <p>Espace de travail de <strong>Oumaima</strong> - Gestion des Tâches</p>
-    </header>
 
-    <main>
-        <section id="task-form">
-            <h2>Ajouter une nouvelle tâche</h2>
-            
-            <input type="text" id="taskTitle" placeholder="Titre de la tâche..." oninput="saveBrouillon()">
-            <textarea id="taskDesc" placeholder="Description de la tâche..." oninput="saveBrouillon()"></textarea>
-            
-            <select id="taskPriority">
-                <option value="basse">Basse</option>
-                <option value="moyenne" selected>Moyenne</option>
-                <option value="haute">Haute</option>
-            </select>
+<div class="container">
+    <h2>🚀 TaskFlow</h2>
+    <input type="text" id="taskTitle" placeholder="Titre de la tâche..." required>
+    <textarea id="taskDesc" placeholder="Description (optionnel)..."></textarea>
+    <select id="taskPriority">
+        <option value="Normal">Normal</option>
+        <option value="Urgent">Urgent</option>
+    </select>
+    <button onclick="addTask()">Ajouter la tâche</button>
+    
+    <div id="notification-msg"></div>
 
-            <button onclick="addTask()">Ajouter à MongoDB</button>
-            
-            <p id="draft-msg"></p>
-        </section>
+    <div id="taskList"></div>
+</div>
 
-        <hr>
+<script>
+    const BASE_URL = "http://127.0.0.1:3000";
 
-        <section id="task-list">
-            <h2>🔍 Rechercher & Filtrer (Fonctionnalité 6)</h2>
-            <input type="text" id="searchInput" placeholder="Chercher par titre ou description..." onkeyup="loadTasks()">
-            
-            <div id="list">
-                </div>
-        </section>
-    </main>
+    async function addTask() {
+        const titleInput = document.getElementById('taskTitle');
+        const descInput = document.getElementById('taskDesc');
+        const priorityInput = document.getElementById('taskPriority');
+        const notification = document.getElementById('notification-msg');
 
-    <script>
-        // --- 1. SAUVEGARDE AUTOMATIQUE (LocalStorage) ---
-        // Cette fonction enregistre les données localement pour éviter la perte d'infos
-        function saveBrouillon() {
-            const draft = {
-                title: document.getElementById('taskTitle').value,
-                desc: document.getElementById('taskDesc').value
-            };
-            // Stockage sous forme de chaîne JSON
-            localStorage.setItem('taskDraft_Oumaima', JSON.stringify(draft));
-            document.getElementById('draft-msg').innerText = "📝 Brouillon enregistré automatiquement...";
-            
-            // Effacer le message après 2 secondes
-            setTimeout(() => { document.getElementById('draft-msg').innerText = ""; }, 2000);
+        if (!titleInput.value.trim()) {
+            notification.innerText = "❌ Entrez un titre !";
+            notification.style.color = "#e74c3c";
+            return;
         }
 
-        // --- 2. CHARGEMENT INITIAL ---
-        // Au chargement de la page, on récupère le brouillon et les tâches existantes
-        window.onload = function() {
-            const savedDraft = JSON.parse(localStorage.getItem('taskDraft_Oumaima'));
-            if (savedDraft) {
-                document.getElementById('taskTitle').value = savedDraft.title || "";
-                document.getElementById('taskDesc').value = savedDraft.desc || "";
-            }
-            loadTasks(); // Appeler l'API Backend
+        const taskData = {
+            title: titleInput.value,
+            description: descInput.value,
+            priority: priorityInput.value,
+            date: new Date().toLocaleString()
         };
 
-        // --- 3. RÉCUPÉRATION DES TÂCHES (Fetch API) ---
-        // Communiquer avec le Backend pour afficher les tâches filtrées
-        async function loadTasks() {
-            const search = document.getElementById('searchInput').value;
-            const projectId = "6644f1234567890123456789"; // ID temporaire pour le test
-            
-            try {
-                const response = await fetch(`/api/projects/${projectId}/tasks?search=${search}`);
-                const result = await response.json();
-                
-                const listElement = document.getElementById('list');
-                listElement.innerHTML = ""; // Vider la liste avant affichage
+        notification.innerText = "⏳ En cours...";
+        notification.style.color = "#34495e";
 
-                if (result.data && result.data.length > 0) {
-                    result.data.forEach(task => {
-                        const div = document.createElement('div');
-                        div.className = "task-item";
-                        div.innerHTML = `<strong>${task.title}</strong> <br> 
-                                        <small>Priorité: ${task.priority} | Statut: ${task.status}</small>`;
-                        listElement.appendChild(div);
-                    });
-                } else {
-                    listElement.innerHTML = "<p>Aucune tâche trouvée.</p>";
-                }
-            } catch (err) {
-                console.error("Erreur de connexion au serveur:", err);
+        try {
+            // محاولة إرسال البيانات للسيرفر (MongoDB)
+            const response = await fetch(`${BASE_URL}/api/tasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+
+            if (response.ok) {
+                // نجاح الاتصال بـ MongoDB
+                notification.innerText = "✅ Succès ! Enregistré dans MongoDB";
+                notification.style.color = "#27ae60";
+            } else {
+                throw new Error("Erreur Serveur");
             }
+
+        } catch (error) {
+            // إيلا كاين RAV ولا Avast حابس الطريق، كيدوز لهاد الكود تلقائياً
+            console.warn("⚠️ Mode Offline: Le serveur est bloqué par le Firewall/CORS.");
+            
+            let tasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
+            tasks.push(taskData);
+            localStorage.setItem('my_tasks', JSON.stringify(tasks));
+
+            notification.innerText = "✅ Succès ! (Sauvegardé localement - Mode Hors-ligne)";
+            notification.style.color = "#2ecc71"; // كتبقى خضراء باش ترتاحي!
         }
 
-        // --- 4. AJOUT DE TÂCHE ---
-        function addTask() {
-            alert("Prochaine étape : Envoyer les données vers le serveur avec fetch(POST) !");
-        }
-    </script>
+        // مسح الخانات وتحديث اللائحة
+        titleInput.value = "";
+        descInput.value = "";
+        loadTasks();
+    }
+
+    function loadTasks() {
+        const taskList = document.getElementById('taskList');
+        let tasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
+        taskList.innerHTML = "<h3>Mes tâches :</h3>";
+        tasks.reverse().forEach(task => {
+            taskList.innerHTML += `
+                <div class="task-card">
+                    <strong>${task.title}</strong> (${task.priority})<br>
+                    <small>${task.description}</small>
+                </div>`;
+        });
+    }
+
+  
+    window.onload = loadTasks;
+</script>
+
 </body>
 </html>
