@@ -19,7 +19,9 @@
         .task-card.completed { border-left-color: var(--success); opacity: 0.6; background: #f9f9f9; }
         
         .actions { margin-top: 12px; display: flex; gap: 10px; }
-        .btn-status { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; flex: 1; }
+        .btn-status { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold; }
+        .btn-delete { background: #cbd5e0; color: #4a5568; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-delete:hover { background: var(--danger); color: white; }
         
         header { max-width: 650px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; }
         .btn-logout { background-color: #ff4d4d; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 8px; font-weight: bold; }
@@ -75,7 +77,6 @@
     
     async function getOrCreateProject() {
         try {
-            
             const res = await fetch(API_PROJECTS_URL, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -84,11 +85,9 @@
             if (res.ok) {
                 const projects = await res.json();
                 if (projects && projects.length > 0) {
-                    
                     currentProjectId = projects[0]._id;
-                    console.log("🎯 Projet réel trouvé dans MongoDB:", currentProjectId);
+                    console.log("🎯 Projet réel trouvé:", currentProjectId);
                 } else {
-                    
                     const createRes = await fetch(API_PROJECTS_URL, {
                         method: 'POST',
                         headers: { 
@@ -100,12 +99,12 @@
                     if (createRes.ok) {
                         const newProj = await createRes.json();
                         currentProjectId = newProj._id;
-                        console.log("🆕 Nouveau projet créé automatiquement:", currentProjectId);
+                        console.log("🆕 Nouveau projet créé:", currentProjectId);
                     }
                 }
             }
         } catch (err) {
-            console.log("⚠️ Impossible de vérifier les projets, utilisation de l'ID par défaut.");
+            console.log("⚠️ Mode fallback pour l'ID du projet.");
         }
     }
 
@@ -127,7 +126,6 @@
     }
 
     
-     
     async function addTask() {
         const title = document.getElementById('taskTitle').value;
         const desc = document.getElementById('taskDesc').value;
@@ -165,7 +163,6 @@
                 loadTasks(); 
             } else {
                 alert("Erreur du serveur: " + (data.error || data.message || "Impossible de créer la tâche"));
-                if(data.details) console.log("Détails:", data.details);
             }
         } catch (err) {
             console.error("Erreur lors de l'ajout:", err);
@@ -182,7 +179,6 @@
             return;
         }
 
-        
         const sortedTasks = [...myTasks].reverse();
 
         sortedTasks.forEach(task => {
@@ -198,15 +194,15 @@
                         <button class="btn-status" onclick="toggleStatus('${task._id}', '${task.status}')">
                             ${isCompleted ? 'Réouvrir' : 'Terminer'}
                         </button>
+                        <button class="btn-delete" onclick="deleteTask('${task._id}')">Supprimer</button>
                     </div>
                 </div>
             `;
         });
     }
 
-   
     async function toggleStatus(id, currentStatus) {
-        const newStatus = (currentStatus === 'En cours' || currentStatus === 'à faire') ? 'Terminée' : 'En cours';
+        const newStatus = (currentStatus === 'Terminée' || currentStatus === 'completed') ? 'En cours' : 'Terminée';
         try {
             const res = await fetch(`${API_TASKS_URL}/${id}`, {
                 method: 'PUT',
@@ -223,6 +219,28 @@
             }
         } catch (err) {
             console.error("Erreur de mise à jour:", err);
+        }
+    }
+
+    
+    async function deleteTask(id) {
+        if (confirm("Voulez-vous vraiment supprimer cette tâche de MongoDB ?")) {
+            try {
+                const res = await fetch(`${API_TASKS_URL}/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    showNotification("🗑️ Tâche supprimée avec succès !", "urgent");
+                    loadTasks(); 
+                } else {
+                    const data = await res.json();
+                    alert("Erreur lors de la suppression: " + (data.message || data.error));
+                }
+            } catch (err) {
+                console.error("Erreur réseau lors de la suppression:", err);
+            }
         }
     }
 
