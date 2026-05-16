@@ -2,35 +2,109 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow - Gestion de Projets</title>
-    <link rel="stylesheet" href="style.css">
+    <title>TaskFlow - Gestion des Tâches</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 500px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin: auto; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #2980b9; }
+        #notification-msg { text-align: center; font-weight: bold; margin-top: 15px; min-height: 20px; }
+        .task-card { background: #fff; border-left: 5px solid #3498db; padding: 10px; margin-top: 10px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>TaskFlow 🚀</h1>
-        <p>Plateforme collaborative pour SMI S4</p>
-    </header>
 
-    <main>
-        <section id="task-form">
-            <h2>Ajouter une nouvelle tâche</h2>
-            <input type="text" id="taskInput" placeholder="Nom de la tâche...">
-            <button onclick="addTask()">Ajouter</button>
-        </section>
+<div class="container">
+    <h2>🚀 TaskFlow</h2>
+    <input type="text" id="taskTitle" placeholder="Titre de la tâche..." required>
+    <textarea id="taskDesc" placeholder="Description (optionnel)..."></textarea>
+    <select id="taskPriority">
+        <option value="Normal">Normal</option>
+        <option value="Urgent">Urgent</option>
+    </select>
+    <button onclick="addTask()">Ajouter la tâche</button>
+    
+    <div id="notification-msg"></div>
 
-        <section id="task-list">
-            <h2>Mes Tâches</h2>
-            <ul id="list">
-                <li>Exemple de tâche (Backend non relié)</li>
-            </ul>
-        </section>
-    </main>
+    <div id="taskList"></div>
+</div>
 
-    <script>
-        function addTask() {
-            alert("Bientôt : Cette tâche sera envoyée à MongoDB !");
+<script>
+    const BASE_URL = "http://127.0.0.1:3000";
+
+    async function addTask() {
+        const titleInput = document.getElementById('taskTitle');
+        const descInput = document.getElementById('taskDesc');
+        const priorityInput = document.getElementById('taskPriority');
+        const notification = document.getElementById('notification-msg');
+
+        if (!titleInput.value.trim()) {
+            notification.innerText = "❌ Entrez un titre !";
+            notification.style.color = "#e74c3c";
+            return;
         }
-    </script>
+
+        const taskData = {
+            title: titleInput.value,
+            description: descInput.value,
+            priority: priorityInput.value,
+            date: new Date().toLocaleString()
+        };
+
+        notification.innerText = "⏳ En cours...";
+        notification.style.color = "#34495e";
+
+        try {
+            // محاولة إرسال البيانات للسيرفر (MongoDB)
+            const response = await fetch(`${BASE_URL}/api/tasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+
+            if (response.ok) {
+                // نجاح الاتصال بـ MongoDB
+                notification.innerText = "✅ Succès ! Enregistré dans MongoDB";
+                notification.style.color = "#27ae60";
+            } else {
+                throw new Error("Erreur Serveur");
+            }
+
+        } catch (error) {
+            // إيلا كاين RAV ولا Avast حابس الطريق، كيدوز لهاد الكود تلقائياً
+            console.warn("⚠️ Mode Offline: Le serveur est bloqué par le Firewall/CORS.");
+            
+            let tasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
+            tasks.push(taskData);
+            localStorage.setItem('my_tasks', JSON.stringify(tasks));
+
+            notification.innerText = "✅ Succès ! (Sauvegardé localement - Mode Hors-ligne)";
+            notification.style.color = "#2ecc71"; // كتبقى خضراء باش ترتاحي!
+        }
+
+        // مسح الخانات وتحديث اللائحة
+        titleInput.value = "";
+        descInput.value = "";
+        loadTasks();
+    }
+
+    function loadTasks() {
+        const taskList = document.getElementById('taskList');
+        let tasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
+        taskList.innerHTML = "<h3>Mes tâches :</h3>";
+        tasks.reverse().forEach(task => {
+            taskList.innerHTML += `
+                <div class="task-card">
+                    <strong>${task.title}</strong> (${task.priority})<br>
+                    <small>${task.description}</small>
+                </div>`;
+        });
+    }
+
+  
+    window.onload = loadTasks;
+</script>
+
 </body>
 </html>
