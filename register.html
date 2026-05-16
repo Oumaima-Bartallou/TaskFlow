@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TaskFlow - Inscription</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; margin-top: 50px; }
+        form { display: flex; flex-direction: column; width: 300px; gap: 10px; }
+    </style>
+</head>
+<body>
+    <form id="registerForm">
+        <h2>Inscription</h2>
+        <input type="text" id="name" placeholder="Nom complet" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Mot de passe" required>
+        <button type="submit">Créer un compte</button>
+        <p id="message"></p>
+        <a href="login.html">Déjà un compte ? Se connecter</a>
+    </form>
+
+   <script>
+   document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        // Envoi de la requête au serveur sur le port 5500
+        const res = await fetch('http://localhost:5500/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            alert('Compte créé avec succès !');
+            window.location.href = 'login.html'; 
+        } else {
+            // Affichage de l'erreur renvoyée par le backend
+            alert(data.message || "Erreur lors de l'inscription");
+            console.log("Erreur du Backend:", data);
+        }
+
+    } catch (err) {
+        console.error('Erreur lors du Fetch:', err);
+        alert('Impossible de contacter le serveur.');
+    }
+    });
+    </script>
+</body>
+</html>

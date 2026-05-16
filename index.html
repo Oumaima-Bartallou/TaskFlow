@@ -10,27 +10,95 @@
     <header>
         <h1>TaskFlow 🚀</h1>
         <p>Plateforme collaborative pour SMI S4</p>
+        <button id="logoutBtn" style="float: right; margin-top: -40px; background-color: #ff4d4d; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Déconnexion</button>
     </header>
 
     <main>
         <section id="task-form">
             <h2>Ajouter une nouvelle tâche</h2>
-            <input type="text" id="taskInput" placeholder="Nom de la tâche...">
+            <input type="text" id="taskInput" placeholder="Nom de la tâche..." required>
+            <input type="text" id="taskDesc" placeholder="Description (optionnel)..." style="margin-left: 10px;">
             <button onclick="addTask()">Ajouter</button>
         </section>
 
         <section id="task-list">
             <h2>Mes Tâches</h2>
             <ul id="list">
-                <li>Exemple de tâche (Backend non relié)</li>
-            </ul>
+                </ul>
         </section>
     </main>
 
     <script>
-        function addTask() {
-            alert("Bientôt : Cette tâche sera envoyée à MongoDB !");
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Accès refusé. Veuillez vous connecter d'abord.");
+        window.location.href = 'login.html';
+    }
+
+    
+    async function loadTasks() {
+        try {
+            
+            
+            console.log("Chargement des tâches...");
+        } catch (err) {
+            console.error("Erreur de chargement:", err);
         }
+    }
+
+    
+    async function addTask() {
+    const title = document.getElementById('taskInput').value;
+
+    if (!title) {
+        alert("Veuillez donner un nom à la tâche.");
+        return;
+    }
+
+    try {
+        const res = await fetch('http://localhost:5500/api/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                title: title,
+                description: "Test description", 
+                status: "à faire",               
+                priority: "moyenne",             
+                 
+                project: "645a1b2c3d4e5f6a7b8c9d0e" 
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            alert("Tâche ajoutée avec succès dans MongoDB ! 🎉");
+            
+            const listElement = document.getElementById('list');
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${data.title}</strong> - <span style="color: orange;">${data.status}</span>`;
+            listElement.appendChild(li);
+
+            document.getElementById('taskInput').value = '';
+        } else {
+            
+            alert("Erreur du serveur: " + data.error);
+            console.log("Détails du manque dans le Schema Mongoose:", data.details);
+        }
+    } catch (err) {
+        console.error("Erreur:", err);
+    }
+    }
+
+    
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.clear();
+        alert('Déconnexion réussie.');
+        window.location.href = 'login.html';
+    });
     </script>
 </body>
 </html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Gestion des Projets</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #333; text-align: center; }
+        .form-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        .project-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .project-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #007bff; }
+        .project-card h3 { margin-top: 0; color: #007bff; }
+        .project-card p { color: #666; font-size: 14px; }
+        .error-msg { color: red; text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Gestion des Projets - TaskFlow</h1>
+    
+    <div class="form-box">
+        <h2>Créer un Nouveau Projet</h2>
+        <div id="error" class="error-msg"></div>
+        <div class="form-group">
+            <label for="title">Titre du Projet :</label>
+            <input type="text" id="title" placeholder="Ex: Développement Application Web" required>
+        </div>
+        <div class="form-group">
+            <label for="description">Description :</label>
+            <textarea id="description" rows="3" placeholder="Description du projet..."></textarea>
+        </div>
+        <button onclick="creerProjet()">Créer le Projet</button>
+    </div>
+
+    <h2>Mes Projets</h2>
+    <div class="project-list" id="projectsContainer">
+        </div>
+</div>
+
+<script>
+    
+    const token = localStorage.getItem('token');
+
+    
+    if (!token) {
+        alert("Veuillez vous connecter d'abord !");
+        window.location.href = 'login.html';
+    }
+
+    
+    async function chargerProjets() {
+        try {
+            const response = await fetch('http://localhost:5000/api/projects', {
+                method: 'GET',
+                headers: {
+                    'x-auth-token': token
+                }
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const projets = await response.json();
+            const container = document.getElementById('projectsContainer');
+            
+            if (projets.length === 0) {
+                container.innerHTML = "<p>Aucun projet trouvé. Créez-en un !</p>";
+                return;
+            }
+
+            container.innerHTML = projets.map(p => `
+                <div class="project-card">
+                    <h3>${p.title}</h3>
+                    <p>${p.description || 'Pas de description'}</p>
+                </div>
+            `).join('');
+
+        } catch (err) {
+            document.getElementById('error').innerText = "Erreur lors chargement des projets";
+        }
+    }
+
+    
+    async function creerProjet() {
+        const title = document.getElementById('title').value;
+        const description = document.getElementById('description').value;
+        const errorDiv = document.getElementById('error');
+
+        if (!title) {
+            errorDiv.innerText = "Le titre est obligatoire !";
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:5000/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                },
+                body: JSON.stringify({ title, description })
+            });
+
+            if (response.ok) {
+                
+                document.getElementById('title').value = '';
+                document.getElementById('description').value = '';
+                errorDiv.innerText = '';
+                
+                chargerProjets();
+            } else {
+                const data = await response.json();
+                errorDiv.innerText = data.msg || "Erreur lors de la création";
+            }
+        } catch (err) {
+            errorDiv.innerText = "Erreur serveur";
+        }
+    }
+
+    chargerProjets();
+</script>
+</body>
+</html>
