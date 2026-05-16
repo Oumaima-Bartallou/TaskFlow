@@ -1,81 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>TaskFlow - Login</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; margin-top: 50px; }
-        form { display: flex; flex-direction: column; width: 300px; gap: 10px; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - TaskFlow</title>
 </head>
 <body>
-    <form id="loginForm">
-        <h2>Connexion</h2>
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="password" id="password" placeholder="Mot de passe" required>
-        <button type="submit">Se connecter</button>
-        <p id="message"></p>
-        <a href="register.html">S'inscrire</a>
-    </form>
+
+    <div class="auth-container">
+        <h2>Se connecter à TaskFlow 🔐</h2>
+        <p>Plateforme collaborative pour SMI S4</p>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Adresse Email :</label>
+                <input type="email" id="email" placeholder="exemple@domaine.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mot de passe :</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-submit">Se connecter</button>
+        </form>
+
+        <p id="message" style="color: red; margin-top: 15px; font-weight: bold;"></p>
+
+        <p class="auth-switch">Vous n'avez pas de compte ? <a href="register.html">S'inscrire</a></p>
+    </div>
 
     <script>
+    
+    const API_URL = "http://127.0.0.1:3000"; 
+
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+        e.preventDefault(); 
+        
+        console.log("🚀 1. Formulaire Login soumis.");
 
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const messageDiv = document.getElementById('message');
 
-    try {
-        // Connexion sur le bon port 5500
-        const res = await fetch('http://localhost:5500/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, password })
-        });
+        messageDiv.innerText = "Connexion en cours...";
+        messageDiv.style.color = "orange";
 
-        const data = await res.json();
-
-        if (res.ok) {
-            // Sauvegarder le token et les infos de l'utilisateur
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-
-            alert('Connexion réussie !');
+        try {
             
-            // Redirection vers votre tableau de bord (dashboard ou index)
-            window.location.href = 'index.html'; 
-        } else {
-            alert(data.message || 'Identifiants invalides.');
-            console.log("Erreur du Backend:", data);
-        }
-
-    } catch (err) {
-        console.error('Erreur lors du Login:', err);
-        alert('Impossible de contacter le serveur.');
-    }
-    });
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            const res = await fetch('/api/auth/register', {
+            console.log("📡 2. Envoi de la requête Login à : " + `${API_URL}/api/auth/login`);
+            
+            const res = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
 
+            console.log("📥 3. Réponse reçue. Status : " + res.status);
             const data = await res.json();
+
             if (res.ok) {
+                console.log("✅ 4. Connexion réussie ! Token reçu.");
+                messageDiv.style.color = "green";
+                messageDiv.innerText = "Connexion réussie ! Redirection...";
                 
-                localStorage.setItem('token', data.token);
-                document.getElementById('message').innerText = "Connexion réussie !";
+                
+                if(data.token) localStorage.setItem('token', data.token);
+                
+                alert("Connexion réussie !");
                 window.location.href = 'index.html'; 
             } else {
-                document.getElementById('message').innerText = data.message;
+                console.warn("⚠️ 4. Échec de connexion :", data.message);
+                messageDiv.style.color = "red";
+                messageDiv.innerText = data.message || "Email ou mot de passe incorrect.";
             }
-        });
+        } catch (err) {
+            console.error("❌ 4. Erreur lors du Login :", err);
+            messageDiv.style.color = "red";
+            messageDiv.innerText = "Erreur de connexion au serveur.";
+        }
+    });
     </script>
 </body>
 </html>
