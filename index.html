@@ -2,109 +2,143 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>TaskFlow - Gestion des Tâches</title>
+    <title>TaskFlow Pro - SMI S4</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; }
-        .container { max-width: 500px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin: auto; }
-        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        button:hover { background: #2980b9; }
-        #notification-msg { text-align: center; font-weight: bold; margin-top: 15px; min-height: 20px; }
-        .task-card { background: #fff; border-left: 5px solid #3498db; padding: 10px; margin-top: 10px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 600px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin: auto; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .btn-add { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        
+        .search-box { margin: 20px 0; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        
+       
+        .task-card { background: #fff; border-left: 6px solid var(--primary); padding: 15px; margin-top: 15px; border-radius: 8px; position: relative; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .task-card.completed { border-left-color: var(--success); opacity: 0.7; text-decoration: line-through; }
+        
+        .actions { margin-top: 10px; display: flex; gap: 10px; }
+        .btn-status { background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        
+        #notification-msg { text-align: center; font-weight: bold; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🚀 TaskFlow</h2>
-    <input type="text" id="taskTitle" placeholder="Titre de la tâche..." required>
-    <textarea id="taskDesc" placeholder="Description (optionnel)..."></textarea>
+    <h2>🚀 TaskFlow <small style="font-size: 12px; color: #7f8c8d;">(SMI S4 Module)</small></h2>
+    
+    <input type="text" id="taskTitle" placeholder="Titre de la tâche...">
+    <textarea id="taskDesc" placeholder="Description..."></textarea>
     <select id="taskPriority">
         <option value="Normal">Normal</option>
         <option value="Urgent">Urgent</option>
     </select>
-    <button onclick="addTask()">Ajouter la tâche</button>
+    <button class="btn-add" onclick="addTask()">Ajouter la tâche</button>
     
     <div id="notification-msg"></div>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="🔍 Rechercher une tâche par titre...">
+    </div>
 
     <div id="taskList"></div>
 </div>
 
 <script>
-    const BASE_URL = "http://127.0.0.1:3000";
+    let myTasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
 
-    async function addTask() {
-        const titleInput = document.getElementById('taskTitle');
-        const descInput = document.getElementById('taskDesc');
-        const priorityInput = document.getElementById('taskPriority');
-        const notification = document.getElementById('notification-msg');
+    function addTask() {
+        const title = document.getElementById('taskTitle').value;
+        const desc = document.getElementById('taskDesc').value;
+        const priority = document.getElementById('taskPriority').value;
 
-        if (!titleInput.value.trim()) {
-            notification.innerText = "❌ Entrez un titre !";
-            notification.style.color = "#e74c3c";
-            return;
-        }
+        if (!title) return alert("Le titre est obligatoire !");
 
-        const taskData = {
-            title: titleInput.value,
-            description: descInput.value,
-            priority: priorityInput.value,
+        const newTask = {
+            id: Date.now(), 
+            title: title,
+            description: desc,
+            priority: priority,
+            status: 'En cours', 
             date: new Date().toLocaleString()
         };
 
-        notification.innerText = "⏳ En cours...";
-        notification.style.color = "#34495e";
-
-        try {
-            // محاولة إرسال البيانات للسيرفر (MongoDB)
-            const response = await fetch(`${BASE_URL}/api/tasks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(taskData)
-            });
-
-            if (response.ok) {
-                // نجاح الاتصال بـ MongoDB
-                notification.innerText = "✅ Succès ! Enregistré dans MongoDB";
-                notification.style.color = "#27ae60";
-            } else {
-                throw new Error("Erreur Serveur");
-            }
-
-        } catch (error) {
-            // إيلا كاين RAV ولا Avast حابس الطريق، كيدوز لهاد الكود تلقائياً
-            console.warn("⚠️ Mode Offline: Le serveur est bloqué par le Firewall/CORS.");
-            
-            let tasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
-            tasks.push(taskData);
-            localStorage.setItem('my_tasks', JSON.stringify(tasks));
-
-            notification.innerText = "✅ Succès ! (Sauvegardé localement - Mode Hors-ligne)";
-            notification.style.color = "#2ecc71"; // كتبقى خضراء باش ترتاحي!
-        }
-
-        // مسح الخانات وتحديث اللائحة
-        titleInput.value = "";
-        descInput.value = "";
-        loadTasks();
+        myTasks.push(newTask);
+        saveAndRender();
+        
+        
+        document.getElementById('taskTitle').value = "";
+        document.getElementById('taskDesc').value = "";
+        showNotification("✅ Ajouté avec succès !");
     }
 
-    function loadTasks() {
-        const taskList = document.getElementById('taskList');
-        let tasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
-        taskList.innerHTML = "<h3>Mes tâches :</h3>";
-        tasks.reverse().forEach(task => {
-            taskList.innerHTML += `
-                <div class="task-card">
-                    <strong>${task.title}</strong> (${task.priority})<br>
-                    <small>${task.description}</small>
-                </div>`;
+    // (En cours / Terminée)
+    function toggleStatus(id) {
+        myTasks = myTasks.map(task => {
+            if (task.id === id) {
+                task.status = (task.status === 'En cours') ? 'Terminée' : 'En cours';
+            }
+            return task;
+        });
+        saveAndRender();
+    }
+
+    
+    function deleteTask(id) {
+        if (confirm("Supprimer cette tâche ?")) {
+            myTasks = myTasks.filter(task => task.id !== id);
+            saveAndRender();
+            showNotification("🗑️ Tâche supprimée");
+        }
+    }
+
+    function filterTasks() {
+        const text = document.getElementById('searchInput').value.toLowerCase();
+        const cards = document.querySelectorAll('.task-card');
+        
+        cards.forEach(card => {
+            const title = card.querySelector('strong').innerText.toLowerCase();
+            card.style.display = title.includes(text) ? 'block' : 'none';
         });
     }
 
-  
-    window.onload = loadTasks;
-</script>
+    function saveAndRender() {
+        localStorage.setItem('my_tasks', JSON.stringify(myTasks));
+        renderTasks();
+    }
 
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = "";
+
+        myTasks.forEach(task => {
+            const isCompleted = task.status === 'Terminée';
+            list.innerHTML += `
+                <div class="task-card ${isCompleted ? 'completed' : ''}">
+                    <strong>${task.title}</strong> <span style="font-size:10px">[${task.priority}]</span>
+                    <p style="margin: 5px 0; font-size: 13px; color: #555;">${task.description}</p>
+                    <small style="color: #999;">${task.date} - <b>${task.status}</b></small>
+                    
+                    <div class="actions">
+                        <button class="btn-status" onclick="toggleStatus(${task.id})">
+                            ${isCompleted ? 'Réouvrir' : 'Terminer'}
+                        </button>
+                        <button class="btn-delete" onclick="deleteTask(${task.id})">Supprimer</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function showNotification(msg) {
+        const n = document.getElementById('notification-msg');
+        n.innerText = msg;
+        n.style.color = "#27ae60";
+        setTimeout(() => n.innerText = "", 3000);
+    }
+
+    window.onload = renderTasks;
+</script>
 </body>
 </html>
