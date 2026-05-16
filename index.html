@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaskFlow Pro - SMI S4</title>
     <style>
-        /* Styles CSS pour une interface moderne */
         :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: var(--dark); }
         .container { max-width: 650px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin: auto; }
@@ -12,41 +12,51 @@
         input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
         .btn-add { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
 
-        /* Notification styles */
         #notification-msg { text-align: center; font-weight: bold; height: 25px; margin: 15px 0; }
 
-        /* Task Cards styles */
         .task-card { background: #fff; border-left: 6px solid var(--primary); padding: 18px; margin-top: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .task-card.urgent { border-left-color: var(--danger); background: #fff5f5; }
         .task-card.completed { border-left-color: var(--success); opacity: 0.6; background: #f9f9f9; }
         
-        .task-info { font-size: 13px; color: #718096; margin: 8px 0; }
         .actions { margin-top: 12px; display: flex; gap: 10px; }
         .btn-status { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; flex: 1; }
-        .btn-delete { background: #cbd5e0; color: #4a5568; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+        
+        header { max-width: 650px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; }
+        .btn-logout { background-color: #ff4d4d; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
+
     <header>
-        <h1>TaskFlow 🚀</h1>
-        <p>Plateforme collaborative pour SMI S4</p>
-        <button id="logoutBtn" style="float: right; margin-top: -40px; background-color: #ff4d4d; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Déconnexion</button>
+        <div>
+            <h1 style="margin: 0;">TaskFlow 🚀</h1>
+            <p style="margin: 5px 0 0 0; color: #718096;">Plateforme collaborative pour SMI S4</p>
+        </div>
+        <button id="logoutBtn" class="btn-logout">Déconnexion</button>
     </header>
 
-    <main>
-        <section id="task-form">
-            <h2>Ajouter une nouvelle tâche</h2>
-            <input type="text" id="taskInput" placeholder="Nom de la tâche..." required>
-            <input type="text" id="taskDesc" placeholder="Description (optionnel)..." style="margin-left: 10px;">
-            <button onclick="addTask()">Ajouter</button>
-        </section>
+    <div class="container">
+        <h2>🚀 Ajouter une nouvelle tâche</h2>
+        
+        <input type="text" id="taskTitle" placeholder="Titre de la tâche..." required>
+        <textarea id="taskDesc" placeholder="Description détaillée (optionnel)..."></textarea>
+        
+        <select id="taskPriority">
+            <option value="Normal">🟢 Priorité: Normal</option>
+            <option value="Urgent">🔴 Priorité: URGENT</option>
+        </select>
+        
+        <button class="btn-add" onclick="addTask()">Ajouter au planning</button>
+        
+        <div id="notification-msg"></div>
 
-        <section id="task-list">
-            <h2>Mes Tâches</h2>
-            <ul id="list">
-                </ul>
-        </section>
-    </main>
+        <div class="search-box">
+            <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="🔍 Rechercher une tâche...">
+        </div>
+
+        <h2>📋 Mes Tâches (MongoDB)</h2>
+        <div id="taskList"></div>
+    </div>
 
     <script>
     
@@ -56,61 +66,182 @@
         window.location.href = 'login.html';
     }
 
+    const API_TASKS_URL = "http://127.0.0.1:3000/api/tasks";
+    const API_PROJECTS_URL = "http://127.0.0.1:3000/api/projects"; 
+    
+    let myTasks = [];
+    let currentProjectId = "66463e2a9b1c2d3e4f5a6b7c"; 
+
+    
+    async function getOrCreateProject() {
+        try {
+            
+            const res = await fetch(API_PROJECTS_URL, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+                const projects = await res.json();
+                if (projects && projects.length > 0) {
+                    
+                    currentProjectId = projects[0]._id;
+                    console.log("🎯 Projet réel trouvé dans MongoDB:", currentProjectId);
+                } else {
+                    
+                    const createRes = await fetch(API_PROJECTS_URL, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ name: "Mon Projet SMI", description: "Projet automatique" })
+                    });
+                    if (createRes.ok) {
+                        const newProj = await createRes.json();
+                        currentProjectId = newProj._id;
+                        console.log("🆕 Nouveau projet créé automatiquement:", currentProjectId);
+                    }
+                }
+            }
+        } catch (err) {
+            console.log("⚠️ Impossible de vérifier les projets, utilisation de l'ID par défaut.");
+        }
+    }
+
     
     async function loadTasks() {
         try {
+            const res = await fetch(API_TASKS_URL, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             
-            
-            console.log("Chargement des tâches...");
+            if (res.ok) {
+                myTasks = await res.json();
+                renderTasks();
+            }
         } catch (err) {
-            console.error("Erreur de chargement:", err);
+            console.error("Erreur réseau:", err);
         }
     }
 
     
+     
     async function addTask() {
-    const title = document.getElementById('taskInput').value;
+        const title = document.getElementById('taskTitle').value;
+        const desc = document.getElementById('taskDesc').value;
+        const priority = document.getElementById('taskPriority').value;
 
-    if (!title) {
-        alert("Veuillez donner un nom à la tâche.");
-        return;
-    }
-
-    try {
-        const res = await fetch('http://localhost:5500/api/tasks', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                title: title,
-                description: "Test description", 
-                status: "à faire",               
-                priority: "moyenne",             
-                 
-                project: "645a1b2c3d4e5f6a7b8c9d0e" 
-            })
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            alert("Tâche ajoutée avec succès dans MongoDB ! 🎉");
-            
-            const listElement = document.getElementById('list');
-            const li = document.createElement('li');
-            li.innerHTML = `<strong>${data.title}</strong> - <span style="color: orange;">${data.status}</span>`;
-            listElement.appendChild(li);
-
-            document.getElementById('taskInput').value = '';
-        } else {
-            
-            alert("Erreur du serveur: " + data.error);
-            console.log("Détails du manque dans le Schema Mongoose:", data.details);
+        if (!title) {
+            showNotification("⚠️ Le titre est obligatoire", "urgent");
+            return;
         }
-    } catch (err) {
-        console.error("Erreur:", err);
+
+        const taskData = {
+            title: title,
+            description: desc || "Aucune description",
+            status: "à faire", 
+            priority: priority === "Urgent" ? "haute" : "moyenne",
+            project: currentProjectId 
+        };
+
+        try {
+            const res = await fetch(API_TASKS_URL, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(taskData)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                showNotification(priority === 'Urgent' ? "🔥 Tâche URGENTE ajoutée !" : "✅ Tâche ajoutée avec succès");
+                document.getElementById('taskTitle').value = "";
+                document.getElementById('taskDesc').value = "";
+                loadTasks(); 
+            } else {
+                alert("Erreur du serveur: " + (data.error || data.message || "Impossible de créer la tâche"));
+                if(data.details) console.log("Détails:", data.details);
+            }
+        } catch (err) {
+            console.error("Erreur lors de l'ajout:", err);
+        }
     }
+
+    
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = ""; 
+
+        if (!myTasks || myTasks.length === 0) {
+            list.innerHTML = `<p style="text-align:center; color:#718096;"><i>Aucune tâche pour le moment.</i></p>`;
+            return;
+        }
+
+        
+        const sortedTasks = [...myTasks].reverse();
+
+        sortedTasks.forEach(task => {
+            const isCompleted = task.status === 'Terminée' || task.status === 'completed';
+            const isUrgent = task.priority === 'Urgent' || task.priority === 'urgente' || task.priority === 'haute';
+
+            list.innerHTML += `
+                <div class="task-card ${isCompleted ? 'completed' : ''} ${isUrgent ? 'urgent' : ''}">
+                    <strong>${isUrgent ? '⚠️ ' : ''}${task.title}</strong>
+                    <p style="margin: 5px 0;">${task.description || '<i>Aucune description</i>'}</p>
+                    
+                    <div class="actions">
+                        <button class="btn-status" onclick="toggleStatus('${task._id}', '${task.status}')">
+                            ${isCompleted ? 'Réouvrir' : 'Terminer'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+   
+    async function toggleStatus(id, currentStatus) {
+        const newStatus = (currentStatus === 'En cours' || currentStatus === 'à faire') ? 'Terminée' : 'En cours';
+        try {
+            const res = await fetch(`${API_TASKS_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (res.ok) {
+                showNotification("🔄 Statut mis à jour !");
+                loadTasks();
+            }
+        } catch (err) {
+            console.error("Erreur de mise à jour:", err);
+        }
+    }
+
+    
+    function filterTasks() {
+        const text = document.getElementById('searchInput').value.toLowerCase();
+        const cards = document.querySelectorAll('.task-card');
+        cards.forEach(card => {
+            const content = card.innerText.toLowerCase();
+            card.style.display = content.includes(text) ? 'block' : 'none';
+        });
+    }
+
+    
+    function showNotification(msg, type = 'success') {
+        const n = document.getElementById('notification-msg');
+        n.innerText = msg;
+        n.style.color = (type === 'urgent') ? "#e74c3c" : "#27ae60";
+        setTimeout(() => n.innerText = "", 3000);
     }
 
     
@@ -119,172 +250,12 @@
         alert('Déconnexion réussie.');
         window.location.href = 'login.html';
     });
+
+    
+    window.onload = async () => {
+        await getOrCreateProject();
+        await loadTasks();
+    };
     </script>
-
-<div class="container">
-    <h2>🚀 TaskFlow SMI S4</h2>
-    
-    <input type="text" id="taskTitle" placeholder="Titre de la tâche...">
-    <textarea id="taskDesc" placeholder="Description détaillée..."></textarea>
-    <select id="taskPriority">
-        <option value="Normal">🟢 Priorité: Normal</option>
-        <option value="Urgent">🔴 Priorité: URGENT</option>
-    </select>
-    <button class="btn-add" onclick="addTask()">Ajouter au planning</button>
-    
-    <div id="notification-msg"></div>
-
-    <div class="search-box">
-        <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="🔍 Rechercher une tâche...">
-    </div>
-
-    <div id="taskList"></div>
-</div>
-
-<script>
-    // Initialisation : Charger les tâches depuis le LocalStorage ou créer un tableau vide
-    let myTasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
-
-    /**
-     * AJOUTER UNE TÂCHE (Fonctionnalité 3 & 7)
-     */
-    function addTask() {
-        const title = document.getElementById('taskTitle').value;
-        const desc = document.getElementById('taskDesc').value;
-        const priority = document.getElementById('taskPriority').value;
-
-        // Validation simple
-        if (!title) {
-            showNotification("⚠️ Le titre est obligatoire", "urgent");
-            return;
-        }
-
-        // Création de l'objet tâche avec horodatage (Fonctionnalité 10)
-        const newTask = {
-            id: Date.now(), // ID unique basé sur le temps
-            title: title,
-            description: desc,
-            priority: priority,
-            status: 'En cours',
-            createdAt: new Date().toLocaleString(), // Date de création
-            completedAt: null // Sera rempli une fois terminée
-        };
-
-        // Ajouter au début du tableau et sauvegarder
-        myTasks.unshift(newTask);
-        saveAndRender();
-        
-        // Réinitialiser les champs du formulaire
-        document.getElementById('taskTitle').value = "";
-        document.getElementById('taskDesc').value = "";
-
-        // Notification visuelle (Fonctionnalité 9)
-        if (priority === 'Urgent') {
-            showNotification("🔥 Tâche URGENTE ajoutée !", "urgent");
-        } else {
-            showNotification("✅ Tâche ajoutée avec succès");
-        }
-    }
-
-    /**
-     * CHANGER LE STATUT (En cours / Terminée)
-     */
-    function toggleStatus(id) {
-        myTasks = myTasks.map(task => {
-            if (task.id === id) {
-                if (task.status === 'En cours') {
-                    task.status = 'Terminée';
-                    task.completedAt = new Date().toLocaleString(); // Enregistrer la date de fin
-                    showNotification("🎉 Félicitations ! Tâche terminée");
-                } else {
-                    task.status = 'En cours';
-                    task.completedAt = null; // Réinitialiser la date de fin
-                    showNotification("🔄 Tâche remise en cours");
-                }
-            }
-            return task;
-        });
-        saveAndRender();
-    }
-
-    /**
-     * SUPPRIMER UNE TÂCHE
-     */
-    function deleteTask(id) {
-        if (confirm("Voulez-vous supprimer cette tâche ?")) {
-            myTasks = myTasks.filter(task => task.id !== id);
-            saveAndRender();
-            showNotification("🗑️ Tâche supprimée", "urgent");
-        }
-    }
-
-    /**
-     * AFFICHER LES NOTIFICATIONS (Fonctionnalité 9)
-     */
-    function showNotification(msg, type = 'success') {
-        const n = document.getElementById('notification-msg');
-        n.innerText = msg;
-        // Changer la couleur selon le type (Success ou Danger)
-        n.style.color = (type === 'urgent') ? "#e74c3c" : "#27ae60";
-        // Faire disparaître après 3 secondes
-        setTimeout(() => n.innerText = "", 3000);
-    }
-
-    /**
-     * RECHERCHE ET FILTRAGE (Fonctionnalité 6)
-     */
-    function filterTasks() {
-        const text = document.getElementById('searchInput').value.toLowerCase();
-        const cards = document.querySelectorAll('.task-card');
-        cards.forEach(card => {
-            const content = card.innerText.toLowerCase();
-            // Afficher ou masquer selon la correspondance
-            card.style.display = content.includes(text) ? 'block' : 'none';
-        });
-    }
-
-    /**
-     * SAUVEGARDER DANS LOCALSTORAGE ET ACTUALISER L'AFFICHAGE (Fonctionnalité 7)
-     */
-    function saveAndRender() {
-        localStorage.setItem('my_tasks', JSON.stringify(myTasks));
-        renderTasks();
-    }
-
-    /**
-     * RENDU DE LA LISTE DANS LE HTML
-     */
-    function renderTasks() {
-        const list = document.getElementById('taskList');
-        list.innerHTML = ""; // Vider la liste avant d'afficher
-
-        myTasks.forEach(task => {
-            const isCompleted = task.status === 'Terminée';
-            const isUrgent = task.priority === 'Urgent';
-
-            list.innerHTML += `
-                <div class="task-card ${isCompleted ? 'completed' : ''} ${isUrgent ? 'urgent' : ''}">
-                    <strong>${isUrgent ? '⚠️ ' : ''}${task.title}</strong>
-                    <p style="margin: 5px 0;">${task.description || '<i>Aucune description</i>'}</p>
-                    
-                    <div class="task-info">
-                        🕒 Créée le: <b>${task.createdAt}</b><br>
-                        ${task.completedAt ? `✅ Terminée le: <b>${task.completedAt}</b>` : `⏳ État: <b>${task.status}</b>`}
-                    </div>
-                    
-                    <div class="actions">
-                        <button class="btn-status" onclick="toggleStatus(${task.id})">
-                            ${isCompleted ? 'Réouvrir' : 'Terminer'}
-                        </button>
-                        <button class="btn-delete" onclick="deleteTask(${task.id})">Supprimer</button>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    // Charger les tâches au démarrage de la page
-    window.onload = renderTasks;
-</script>
 </body>
 </html>
