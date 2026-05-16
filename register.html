@@ -1,51 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>TaskFlow - Inscription</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; margin-top: 50px; }
-        form { display: flex; flex-direction: column; width: 300px; gap: 10px; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - TaskFlow</title>
 </head>
 <body>
-    <form id="registerForm">
-        <h2>Inscription</h2>
-        <input type="text" id="name" placeholder="Nom complet" required>
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="password" id="password" placeholder="Mot de passe" required>
-        <button type="submit">Créer un compte</button>
-        <p id="message"></p>
-        <a href="login.html">Déjà un compte ? Se connecter</a>
-    </form>
 
-<script>
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    <div class="auth-container">
+        <h2>Créer un compte TaskFlow 🚀</h2>
+        <p>Plateforme collaborative pour SMI S4</p>
 
-    try {
-        const res = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
-        });
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="name">Nom complet :</label>
+                <input type="text" id="name" placeholder="Votre nom" required>
+            </div>
 
-        const data = await res.json();
+            <div class="form-group">
+                <label for="email">Adresse Email :</label>
+                <input type="email" id="email" placeholder="exemple@domaine.com" required>
+            </div>
 
-        if (res.ok) {
-            alert("Compte créé ! Connectez-vous.");
-            window.location.href = 'login.html';
-        } else {
-            document.getElementById('message').innerText = data.message || "Erreur lors de l'inscription";
+            <div class="form-group">
+                <label for="password">Mot de passe :</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-submit">S'inscrire</button>
+        </form>
+
+        <p id="message" style="color: red; margin-top: 15px; font-weight: bold;"></p>
+
+        <p class="auth-switch">Vous avez déjà un compte ? <a href="login.html">Se connecter</a></p>
+    </div>
+
+    <script>
+    const API_URL = "http://127.0.0.1:3000"; 
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault(); // Empêcher le rechargement de la page
+        
+        console.log("🚀 1. Formulaire soumis, JS activé.");
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const messageDiv = document.getElementById('message');
+
+        messageDiv.innerText = "Envoi en cours au serveur...";
+        messageDiv.style.color = "orange";
+
+        try {
+            console.log("📡 2. Envoi de la requête Fetch à : " + `${API_URL}/api/auth/register`);
+            
+            const res = await fetch(`${API_URL}/api/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            console.log("📥 3. Réponse reçue du serveur. Status : " + res.status);
+            const data = await res.json();
+
+            if (res.ok) {
+                console.log("✅ 4. Compte créé avec succès dans la base de données !");
+                messageDiv.style.color = "green";
+                messageDiv.innerText = "Compte créé avec succès !";
+                alert("Compte créé avec succès !");
+                window.location.href = 'login.html';
+            } else {
+                console.warn("⚠️ 4. Le serveur a renvoyé une erreur :", data.message);
+                messageDiv.style.color = "red";
+                messageDiv.innerText = data.message || "Erreur lors de l'inscription";
+            }
+        } catch (err) {
+            console.error("❌ 4. Échec total de la connexion au serveur :", err);
+            messageDiv.style.color = "red";
+            messageDiv.innerText = "Erreur de connexion au serveur.";
         }
-    } catch (err) {
-        console.error("Erreur:", err);
-        document.getElementById('message').innerText = "Erreur de connexion au serveur.";
-    }
-});
-</script>
+    });
+    </script>
 </body>
 </html>

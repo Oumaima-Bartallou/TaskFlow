@@ -83,7 +83,7 @@ app.delete('/api/tasks/:id', async (req, res) => {
 });
 
 // --- 4. Server Start ---
-const PORT = 5500; 
-app.listen(PORT, () => {
-    console.log(`🚀 Serveur prêt sur http://localhost:${PORT}`);
+const PORT = 3000; 
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Serveur prêt sur http://127.0.0.1:${PORT}`);
 });
