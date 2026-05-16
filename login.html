@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TaskFlow - Login</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; margin-top: 50px; }
+        form { display: flex; flex-direction: column; width: 300px; gap: 10px; }
+    </style>
+</head>
+<body>
+    <form id="loginForm">
+        <h2>Connexion</h2>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Mot de passe" required>
+        <button type="submit">Se connecter</button>
+        <p id="message"></p>
+        <a href="register.html">S'inscrire</a>
+    </form>
+
+    <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        // Connexion sur le bon port 5500
+        const res = await fetch('http://localhost:5500/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            // Sauvegarder le token et les infos de l'utilisateur
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            alert('Connexion réussie !');
+            
+            // Redirection vers votre tableau de bord (dashboard ou index)
+            window.location.href = 'index.html'; 
+        } else {
+            alert(data.message || 'Identifiants invalides.');
+            console.log("Erreur du Backend:", data);
+        }
+
+    } catch (err) {
+        console.error('Erreur lors du Login:', err);
+        alert('Impossible de contacter le serveur.');
+    }
+    });
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                
+                localStorage.setItem('token', data.token);
+                document.getElementById('message').innerText = "Connexion réussie !";
+                window.location.href = 'index.html'; 
+            } else {
+                document.getElementById('message').innerText = data.message;
+            }
+        });
+    </script>
+</body>
+</html>
