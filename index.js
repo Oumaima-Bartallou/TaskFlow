@@ -36,6 +36,7 @@ app.use('/api/auth', require('./routes/auth.js'));
 app.use('/api', require('./routes/activityBackendRoutes')); 
 app.use('/api/projects', require('./routes/projects.js'));
 app.use('/api/tasks', require('./routes/tasks.js'));
+app.use('/api/dashboard', require('./routes/dashboard.js'));
 
 
 app.use('/api', require('./routes/activityBackendRoutes').router);
