@@ -1,9 +1,9 @@
+require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
 const Activity = require('./models/Activity'); 
-
 
 const notificationSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -11,13 +11,12 @@ const notificationSchema = new mongoose.Schema({
     isRead: { type: Boolean, default: false },
     timestamp: { type: Date, default: Date.now }
 });
-const Notification = mongoose.model('Notification', notificationSchema);
 
-
-//const Activity = require('./models/Activity'); 
+const Notification = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
 
 const app = express();
 
+// --- 1. CONFIGURATION CORS ---
 app.use(cors({
     origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -26,18 +25,21 @@ app.use(cors({
 
 app.use(express.json());
 
+// --- 2. CONNEXION MONGOOSE LOCAL ---
 
-const MONGO_URI = "mongodb://oumaimabartallou:oumaima2004@cluster0-shard-00-00.z5m6z.mongodb.net:27017,cluster0-shard-00-01.z5m6z.mongodb.net:27017,cluster0-shard-00-02.z5m6z.mongodb.net:27017/TaskFlow?ssl=true&replicaSet=atlas-z5m6z-shard-0&authSource=admin&retryWrites=true&w=majority"; 
+mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/taskflow")
+    .then(() => console.log("🍃 MongoDB Connecté avec succès en Local !"))
+    .catch(err => console.error("❌ Erreur MongoDB :", err));
+
+// --- 3. ROUTES GENERALES & AUTH ---
+app.use('/api/auth', require('./routes/auth.js')); 
 
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log("✅ MongoDB Connecté !"))
-    .catch(err => console.error("❌ Erreur MongoDB:", err));
+app.use('/api', require('./routes/activityBackendRoutes').router);
 
-
+// 🔔 Routes des Notifications (F8 د شيماء)
 app.get('/api/notifications', async (req, res) => {
     try {
-   
         const notifs = await Notification.find({ isRead: false }).sort({ timestamp: -1 });
         res.json(notifs);
     } catch (err) {
@@ -54,12 +56,12 @@ app.patch('/api/notifications/:id/read', async (req, res) => {
     }
 });
 
-// 5️⃣ & 9️⃣ ROUTE DES TASKS + ENREGISTREMENT ACTIVITÉ
+// --- 4. EXEMPLE POST TASK ---
 app.post('/api/tasks', async (req, res) => {
     try {
+        console.log("Données reçues:", req.body);
         const userId = req.user ? req.user.id : "66463e2a9b1c2d3e4f5a6b7d"; 
 
-    
         await Activity.create({
             actionType: 'création_tâche',
             project: req.body.project || "66463e2a9b1c2d3e4f5a6b7c", 
@@ -67,7 +69,6 @@ app.post('/api/tasks', async (req, res) => {
             details: `a créé la tâche "${req.body.title}"`
         });
 
-       
         await Notification.create({
             user: userId,
             details: `Une nouvelle tâche "${req.body.title}" vous a été assignée.`
@@ -79,9 +80,9 @@ app.post('/api/tasks', async (req, res) => {
     }
 });
 
-app.use('/api', require('./routes/activityBackendRoutes').router);
+// --- 5. DEMARRAGE DU SERVEUR ---
 
-const PORT = 3000;
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Serveur prêt sur http://127.0.0.1:${PORT}`);
 });

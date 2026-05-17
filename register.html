@@ -3,83 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription - TaskFlow</title>
+    <title>TaskFlow - Inscription</title>
+    <style>
+        :root { --primary: #3498db; --dark: #2c3e50; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; font-size: 14px; }
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; }
+        .error-msg { color: var(--danger); font-size: 14px; margin-top: 10px; display: none; text-align: center; font-weight: 500; }
+        .success-msg { color: var(--success); font-size: 14px; margin-top: 10px; display: none; text-align: center; font-weight: 500; }
+        a { color: var(--primary); text-decoration: none; font-weight: bold; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
 
-    <div class="auth-container">
-        <h2>Créer un compte TaskFlow 🚀</h2>
-        <p>Plateforme collaborative pour SMI S4</p>
+<div class="auth-container">
+    <h2>Créer un compte TaskFlow 🚀</h2>
+    <p style="color: #718096; font-size: 14px;">Plateforme collaborative pour SMI S4</p>
+    
+    <form id="registerForm">
+        <input type="text" id="regName" placeholder="Nom complet..." required>
+        <input type="email" id="regEmail" placeholder="Adresse Email..." required>
+        <input type="password" id="regPassword" placeholder="Mot de passe..." required>
+        <button type="submit" class="btn">S'inscrire</button>
+    </form>
 
-        <form id="registerForm">
-            <div class="form-group">
-                <label for="name">Nom complet :</label>
-                <input type="text" id="name" placeholder="Votre nom" required>
-            </div>
+    <div id="errorBox" class="error-msg"></div>
+    <div id="successBox" class="success-msg">L'inscription a réussi ! Redirection vers la page de connexion...</div>
 
-            <div class="form-group">
-                <label for="email">Adresse Email :</label>
-                <input type="email" id="email" placeholder="exemple@domaine.com" required>
-            </div>
+    <p style="margin-top: 20px; font-size: 14px;">Vous avez déjà un compte ? <a href="login.html">Se connecter</a></p>
+</div>
 
-            <div class="form-group">
-                <label for="password">Mot de passe :</label>
-                <input type="password" id="password" placeholder="••••••••" required>
-            </div>
-
-            <button type="submit" class="btn-submit">S'inscrire</button>
-        </form>
-
-        <p id="message" style="color: red; margin-top: 15px; font-weight: bold;"></p>
-
-        <p class="auth-switch">Vous avez déjà un compte ? <a href="login.html">Se connecter</a></p>
-    </div>
-
-    <script>
-    const API_URL = "http://127.0.0.1:3000"; 
-
+<script>
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
         e.preventDefault(); // Empêcher le rechargement de la page
         
-        console.log("🚀 1. Formulaire soumis, JS activé.");
-
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const messageDiv = document.getElementById('message');
-
-        messageDiv.innerText = "Envoi en cours au serveur...";
-        messageDiv.style.color = "orange";
+        // Récupération des valeurs des champs
+        const name = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        
+        const errorBox = document.getElementById('errorBox');
+        const successBox = document.getElementById('successBox');
+        
+        // Réinitialisation des alertes
+        errorBox.style.display = 'none';
+        successBox.style.display = 'none';
 
         try {
-            console.log("📡 2. Envoi de la requête Fetch à : " + `${API_URL}/api/auth/register`);
-            
-            const res = await fetch(`${API_URL}/api/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password })
+            // Envoi de la requête POST vers l'API d'authentification du Backend
+            const response = await axios.post('http://127.0.0.1:3000/api/auth/register', {
+                name,
+                email,
+                password
             });
 
-            console.log("📥 3. Réponse reçue du serveur. Status : " + res.status);
-            const data = await res.json();
-
-            if (res.ok) {
-                console.log("✅ 4. Compte créé avec succès dans la base de données !");
-                messageDiv.style.color = "green";
-                messageDiv.innerText = "Compte créé avec succès !";
-                alert("Compte créé avec succès !");
-                window.location.href = 'login.html';
-            } else {
-                console.warn("⚠️ 4. Le serveur a renvoyé une erreur :", data.message);
-                messageDiv.style.color = "red";
-                messageDiv.innerText = data.message || "Erreur lors de l'inscription";
+            // Si le serveur répond avec un succès (200 ou 201)
+            if (response.status === 201 || response.status === 200) {
+                successBox.style.display = 'block';
+                // Redirection automatique vers la page de login après 2 secondes
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
             }
-        } catch (err) {
-            console.error("❌ 4. Échec total de la connexion au serveur :", err);
-            messageDiv.style.color = "red";
-            messageDiv.innerText = "Erreur de connexion au serveur.";
+        } catch (error) {
+            errorBox.style.display = 'block';
+            if (error.response) {
+                // Affichage du message d'erreur personnalisé renvoyé par l'API Express
+                errorBox.innerText = error.response.data.message || "Une erreur est survenue lors de l'inscription.";
+            } else {
+                // Si le serveur Node.js ne répond pas du tout
+                errorBox.innerText = "Erreur : Impossible de contacter le serveur backend. Vérifiez qu'il est bien démarré.";
+            }
         }
     });
-    </script>
+</script>
+
 </body>
 </html>

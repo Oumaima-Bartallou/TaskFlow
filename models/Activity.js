@@ -24,6 +24,6 @@ const activitySchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, { timestamps: true }); // Génère automatiquement createdAt et updatedAt
+}, { timestamps: true }); 
 
 module.exports = mongoose.model('Activity', activitySchema);
