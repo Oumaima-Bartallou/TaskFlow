@@ -21,6 +21,7 @@ const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/taskflow";
 mongoose.connect(mongoURI)
   .then(() => console.log('✅ Connexion à MongoDB réussie !'))
   .catch((err) => console.log('❌ Erreur de connexion :', err));
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/taskflow"; 
 
 // --- 3. API Routes ---
 app.use('/api/auth', require('./routes/auth'));
