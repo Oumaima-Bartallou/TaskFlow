@@ -1,14 +1,13 @@
 const mongoose = require('mongoose');
 
 const TaskSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: [true, "Le titre de la tâche est obligatoire"],
-        trim: true
+    title: { 
+        type: String, 
+        required: true 
     },
-    description: {
-        type: String,
-        default: "Aucune description"
+    description: { 
+        type: String, 
+        default: 'Aucune description' 
     },
     status: {
         type: String,
@@ -27,20 +26,21 @@ const TaskSchema = new mongoose.Schema({
             message: "{VALUE} n'est pas une priorité valide (basse, moyenne, haute)"
         },
         default: 'moyenne'
-    },
+    }, 
     deadline: { 
-        type: Date 
+        type: Date, 
+        required: true 
     },
     project: { 
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Project',
-        required: [true, "Une tâche doit obligatoirement être liée à un projet parent"]
+        ref: 'Project', 
+        required: true 
     },
-    assignedTo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
+    assignedTo: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
+        default: null 
     }
-}, { timestamps: true });
+}, { timestamps: true }); 
 
 module.exports = mongoose.model('Task', TaskSchema);
