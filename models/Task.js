@@ -14,9 +14,7 @@ const taskSchema = new mongoose.Schema({
         enum: ['à faire', 'en cours', 'terminé'], 
         default: 'à faire' 
     },
-<<<<<<< Updated upstream
    
-=======
     status: {
         type: String,
         required: true,
@@ -40,16 +38,12 @@ const taskSchema = new mongoose.Schema({
         type: Date 
     },
   
->>>>>>> Stashed changes
     project: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Project',
         required: true 
     },
-<<<<<<< Updated upstream
   
-=======
->>>>>>> Stashed changes
     assignedTo: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
