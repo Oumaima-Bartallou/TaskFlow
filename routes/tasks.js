@@ -70,5 +70,18 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 });
-
+// GET /api/tasks/my-tasks/:projectId
+router.get('/my-tasks/:projectId', async (req, res) => {
+  try {
+   
+    const tasks = await Task.find({ 
+      project: req.params.projectId,
+      assignedTo: req.user?._id || req.userId 
+    }).populate('assignedTo', 'name email');
+    
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors du filtrage des tâches", error: err.message });
+  }
+});
 module.exports = router;
