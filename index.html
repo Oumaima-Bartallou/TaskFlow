@@ -2,303 +2,229 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>TaskFlow Pro - Dashboard Global (F1 - F10)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow 🚀 - Espace de Travail</title>
     <style>
         :root { 
-            --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; --warning: #f1c40f;
+            --primary: #3498db; --success: #27ae60; --danger: #e74c3c; 
+            --dark: #2c3e50; --gray: #718096; --light: #f4f7f6;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: var(--dark); }
-        .container { max-width: 900px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin: auto; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--light); padding: 20px; margin: 0; }
         
-        /* Navbar avec Cloche de Notification (F10) */
-        .navbar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .notif-bell { position: relative; cursor: pointer; font-size: 22px; }
-        .notif-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; }
+        /* 🔔 Header & Stats */
+        header { 
+            max-width: 1100px; margin: 0 auto 30px auto; display: flex; 
+            justify-content: space-between; align-items: center; background: white; 
+            padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); gap: 20px; 
+        }
+        .btn-logout { padding: 8px 16px; background-color: var(--danger); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; flex: 3; }
+        .stat-card { padding: 15px; border-radius: 12px; text-align: center; color: white; font-weight: bold; font-size: 14px; }
+        .stat-projects { background: var(--primary); } .stat-assigned { background: var(--dark); } 
+        .stat-completed { background: var(--success); } .stat-overdue { background: var(--danger); }
+        .stat-card span { display: block; font-size: 24px; margin-top: 5px; font-weight: 800; }
+
+        /* 🏢 Layout Grids */
+        .workspace-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; max-width: 1100px; margin: 0 auto; }
+        .panel { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         
-        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: #edf2f7; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; }
-        .stat-card.active-p { border-top: 4px solid var(--primary); }
-        .stat-card.assigned-t { border-top: 4px solid var(--dark); }
-        .stat-card.completed-t { border-top: 4px solid var(--success); }
-        .stat-card.delayed-t { border-top: 4px solid var(--danger); }
+        /* 📝 Forms & Inputs */
+        h3 { color: var(--dark); margin-top: 0; display: flex; align-items: center; gap: 10px; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0 15px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; font-size: 14px; }
+        .btn-action { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .btn-action:hover { background: #2980b9; }
 
-        .section { border: 2px solid #edf2f7; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #fff; }
-        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
-        button { padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-primary { background: var(--primary); width: 100%; }
-        .btn-danger { background: var(--danger); }
-        .btn-success { background: var(--success); }
-        .btn-logout { background: #718096; }
-
-        #authSection { max-width: 450px; margin: auto; }
-        .hidden { display: none !important; }
-        #notification-msg { text-align: center; font-weight: bold; height: 25px; margin: 15px 0; }
-        .task-card { background: #fff; border-left: 6px solid var(--primary); padding: 18px; margin-top: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .task-card.urgent { border-left-color: var(--danger); background: #fff5f5; }
-        .task-card.completed { border-left-color: var(--success); opacity: 0.6; background: #f9f9f9; }
-        .task-info { font-size: 13px; color: #718096; margin: 8px 0; }
-        .actions { margin-top: 12px; display: flex; gap: 10px; }
-
-        /* Style de la liste déroulante des notifs */
-        .notif-dropdown { background: #fff; border: 2px solid #edf2f7; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-        .notif-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #edf2f7; font-size: 13px; }
+        /* 📋 Task Cards */
+        .task-card { background: #f8fafc; border-left: 5px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .task-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; color: white; }
+        .badge-haute { background: var(--danger); } .badge-moyenne { background: #f39c12; } .badge-basse { background: var(--success); }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
 
-<div id="authSection" class="section">
-    <h2>🔐 Connexion - TaskFlow SMI S4</h2>
-    <input type="email" id="authEmail" placeholder="Adresse Email...">
-    <input type="password" id="authPassword" placeholder="Mot de passe...">
-    <button class="btn-primary" onclick="handleAuth()">Se connecter</button>
-</div>
-
-<div id="appSection" class="container hidden">
-    
-    <div class="navbar">
-        <h3>🚀 TaskFlow Dashboard</h3>
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div class="notif-bell" onclick="toggleNotifDropdown()">
-                🔔 <span class="notif-badge" id="notifCount">0</span>
-            </div>
-            <button class="btn-logout" onclick="logout()">🚪 Quitter</button>
-        </div>
+<header>
+    <div style="flex: 1; min-width: 200px;">
+        <h1 style="margin: 0; font-size: 26px;">TaskFlow 🚀</h1>
+        <p style="margin: 3px 0 0 0; color: #718096; font-size: 13px;">Plateforme collaborative pour SMI S4</p>
+        <button id="logoutBtn" class="btn-logout" style="margin-top: 10px;">Déconnexion</button>
     </div>
-
-    <div id="notifDropdownSection" class="section hidden">
-        <h4>🔔 Notifications Récentes (Non lues)</h4>
-        <div id="notifList"></div>
+    <div class="stats-grid">
+        <div class="stat-card stat-projects">Projets Actifs <span id="countProjects">0</span></div>
+        <div class="stat-card stat-assigned">Tâches Assignées <span id="countAssigned">0</span></div>
+        <div class="stat-card stat-completed">Terminées <span id="countCompleted">0</span></div>
+        <div class="stat-card stat-overdue">En Retard 🔥 <span id="countOverdue">0</span></div>
     </div>
+</header>
 
-    <div class="dashboard-grid">
-        <div class="stat-card active-p">Projets Actifs<br><span>1</span></div>
-        <div class="stat-card assigned-t">Tâches Assignées<br><span id="statAssigned">0</span></div>
-        <div class="stat-card completed-t">Tâches Terminées<br><span id="statCompleted">0</span></div>
-        <div class="stat-card delayed-t">En Retard 🔥<br><span id="statDelayed">0</span></div>
-    </div>
-
-    <div id="notification-msg"></div>
-
-    <div class="section">
-        <h3>📝 Ajouter une Nouvelle Tâche</h3>
-        <input type="text" id="taskTitle" placeholder="Titre de la tâche (Obligatoire)...">
-        <textarea id="taskDesc" placeholder="Description de la tâche..."></textarea>
-        <select id="taskPriority">
-            <option value="Normal">🟢 Priorité: Normal</option>
-            <option value="Urgent">🔴 Priorité: URGENT</option>
+<div class="workspace-grid">
+    <div class="panel">
+        <h3>📁 (F2) Gestion des Projets</h3>
+        <form id="projectForm">
+            <input type="text" id="projTitle" placeholder="Titre du projet..." required>
+            <textarea id="projDesc" placeholder="Description du projet..." rows="2"></textarea>
+            <button type="submit" class="btn-action">Créer le Projet</button>
+        </form>
+        <hr style="border: 1px solid #edf2f7; margin: 20px 0;">
+        
+        <h3>🎯 Choisir un Projet</h3>
+        <select id="projectSelector">
+            <option value="">-- Sélectionner un projet --</option>
         </select>
-        <button class="btn-primary" onclick="addTask()">Ajouter au planning</button>
     </div>
 
-    <div class="section">
-        <h3>🔍 Filtrage et Recherche</h3>
-        <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="Rechercher par mot-clé...">
-    </div>
+    <div class="panel">
+        <h3>🚀 (F3) Ajouter une nouvelle tâche</h3>
+        <form id="taskForm">
+            <input type="text" id="taskTitle" placeholder="Titre de la tâche..." required>
+            <textarea id="taskDesc" placeholder="Description détaillée (optionnel)..." rows="2"></textarea>
+            
+            <label style="font-weight: bold; font-size: 14px;">Date limite :</label>
+            <input type="date" id="taskDeadline" required>
+            
+            <label style="font-weight: bold; font-size: 14px;">Priorité :</label>
+            <select id="taskPriority">
+                <option value="basse">🟢 Basse</option>
+                <option value="moyenne" selected>🟡 Moyenne</option>
+                <option value="haute">🔴 Haute</option>
+            </select>
+            <button type="submit" class="btn-action" style="background: #2ecc71;">Ajouter au planning</button>
+        </form>
 
-    <h3>📋 Liste des Tâches</h3>
-    <div id="taskList"></div>
+        <hr style="border: 1px solid #edf2f7; margin: 25px 0;">
 
-    <div class="section" style="margin-top: 30px;">
-        <h3>⏳ Fil d'activités du Projet (F9)</h3>
-        <div id="activityFeed" style="max-height: 150px; overflow-y: auto; background: #fafafa; padding: 10px; border-radius: 8px;">
-            <p style="text-align:center; color:#718096;"><i>Aucune activité récente.</i></p>
+        <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; min-width: 150px;">📋 Liste des Tâches</h3>
+            <select id="filterStatus" style="margin: 0; padding: 8px;">
+                <option value="tous">🔍 Filtrer par Statut: Tous</option>
+                <option value="à faire">📝 À faire</option>
+                <option value="en cours">⏳ En cours</option>
+                <option value="terminé">✅ Terminé</option>
+            </select>
+        </div>
+        
+        <div id="tasksContainer">
+            <p style="color: var(--gray); text-align: center; font-style: italic;">Veuillez sélectionner un projet pour voir les tâches.</p>
         </div>
     </div>
 </div>
 
 <script>
-    const API_BASE_URL = "http://127.0.0.1:3000/api";
-    let myTasks = JSON.parse(localStorage.getItem('my_tasks')) || [];
-    let currentProjectId = "66463e2a9b1c2d3e4f5a6b7c";
-    let unreadNotifications = [];
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-    function checkSession() {
-        const token = localStorage.getItem('token');
-        if (token) {
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('appSection').classList.remove('hidden');
-            initApp();
-        } else {
-            document.getElementById('authSection').classList.remove('hidden');
-            document.getElementById('appSection').classList.add('hidden');
-        }
-    }
+    const API_URL = 'http://127.0.0.1:3000/api';
 
-    function handleAuth() {
-        localStorage.setItem('token', 'dummy-token-smi');
-        showNotification("🔓 Connexion réussie !");
-        checkSession();
-    }
-
-    function logout() {
-        localStorage.removeItem('token');
-        showNotification("🚪 Déconnexion", "urgent");
-        checkSession();
-    }
-
-    // ================= F10: LOGIQUE DES NOTIFICATIONS (POLLING & LOCALSTORAGE) =================
-    async function fetchNotifications() {
+    
+    async function loadDashboardMetrics() {
         try {
-            const res = await fetch(`${API_BASE_URL}/notifications`);
-            if (res.ok) {
-                unreadNotifications = await res.json();
-                updateNotifUI();
-            }
-        } catch (err) { console.error("Erreur Polling:", err); }
-    }
-
-    function updateNotifUI() {
-        const countBadge = document.getElementById('notifCount');
-        countBadge.innerText = unreadNotifications.length;
-
-        const listDiv = document.getElementById('notifList');
-        if (unreadNotifications.length === 0) {
-            listDiv.innerHTML = "<p style='color:#718096; font-size:12px;'>Aucune nouvelle notification.</p>";
-            return;
-        }
-
-        listDiv.innerHTML = "";
-        unreadNotifications.forEach(notif => {
-            listDiv.innerHTML += `
-                <div class="notif-item">
-                    <span>🔔 ${notif.details}</span>
-                    <button class="btn-success" style="padding:4px 8px; font-size:11px;" onclick="markAsRead('${notif._id}', '${notif.details}')">Lu</button>
-                </div>`;
-        });
-    }
-
-    async function markAsRead(id, details) {
-        try {
-            const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, { method: 'PATCH' });
-            if (res.ok) {
-                
-                let archived = JSON.parse(localStorage.getItem('read_notifications')) || [];
-                archived.push({ id, details, readAt: new Date() });
-                localStorage.setItem('read_notifications', JSON.stringify(archived));
-
-                
-                unreadNotifications = unreadNotifications.filter(n => n._id !== id);
-                updateNotifUI();
-                showNotification("Notification marquée comme lue");
-            }
+            const res = await axios.get(`${API_URL}/dashboard`);
+            document.getElementById('countProjects').innerText = res.data.activeProjects || 0;
+            document.getElementById('countAssigned').innerText = res.data.totalAssigned || 0;
+            document.getElementById('countCompleted').innerText = res.data.completedTasks || 0;
+            document.getElementById('countOverdue').innerText = res.data.overdueTasks || 0;
         } catch (err) { console.error(err); }
     }
 
-    function toggleNotifDropdown() {
-        document.getElementById('notifDropdownSection').classList.toggle('hidden');
-    }
-
-    // ================= F7: BROUILLONS AUTOMATIQUES =================
-    const fields = ['taskTitle', 'taskDesc'];
-    fields.forEach(f => {
-        document.getElementById(f).addEventListener('input', () => {
-            const draft = { title: document.getElementById('taskTitle').value, desc: document.getElementById('taskDesc').value };
-            localStorage.setItem(`draft_${currentProjectId}`, JSON.stringify(draft));
-        });
+    
+    document.getElementById('projectForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`${API_URL}/projects`, {
+                title: document.getElementById('projTitle').value,
+                description: document.getElementById('projDesc').value
+            });
+            document.getElementById('projectForm').reset();
+            loadProjects(); 
+            loadDashboardMetrics();
+        } catch (err) { alert("Erreur lors de la création du projet"); }
     });
 
-    function checkDraft() {
-        const saved = localStorage.getItem(`draft_${currentProjectId}`);
-        if (saved) {
-            const draft = JSON.parse(saved);
-            if ((draft.title || draft.desc) && confirm("🔄 Brouillon trouvé. Restaurer ?")) {
-                document.getElementById('taskTitle').value = draft.title || "";
-                document.getElementById('taskDesc').value = draft.desc || "";
-            }
-        }
-    }
-
-    // ================= GESTION DES TÂCHES (F3 & F9) =================
-    async function addTask() {
-        const title = document.getElementById('taskTitle').value;
-        const desc = document.getElementById('taskDesc').value;
-        const priority = document.getElementById('taskPriority').value;
-
-        if (!title) return showNotification("⚠️ Titre obligatoire", "urgent");
-
-        const newTask = { id: Date.now(), title, description: desc, priority, status: 'En cours', createdAt: new Date().toLocaleString() };
-
+    
+    async function loadProjects() {
         try {
-            const res = await fetch(`${API_BASE_URL}/tasks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTask)
+            const res = await axios.get(`${API_URL}/projects`);
+            const selector = document.getElementById('projectSelector');
+            selector.innerHTML = '<option value="">-- Sélectionner un projet --</option>';
+            res.data.forEach(p => {
+                selector.innerHTML += `<option value="${p._id}">${p.title}</option>`;
             });
-            if (res.ok) {
-                myTasks.unshift(newTask);
-                localStorage.removeItem(`draft_${currentProjectId}`);
-                saveAndRender();
-                document.getElementById('taskTitle').value = "";
-                document.getElementById('taskDesc').value = "";
-                showNotification("✅ Tâche ajoutée et notifiée !");
-                await loadActivities();
-                await fetchNotifications();
-            }
-        } catch (err) {
-            myTasks.unshift(newTask);
-            saveAndRender();
-        }
+        } catch (err) { console.error(err); }
     }
 
-    async function loadActivities() {
+    
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const projectId = document.getElementById('projectSelector').value;
+        if (!projectId) return alert("Veuillez d'abord sélectionner un projet !");
+
         try {
-            const res = await fetch(`${API_BASE_URL}/projects/${currentProjectId}/activities`);
-            if (res.ok) {
-                const activities = await res.json();
-                const feed = document.getElementById('activityFeed');
-                if (activities.length === 0) return;
-                feed.innerHTML = "";
-                activities.forEach(act => {
-                    feed.innerHTML += `<div style='font-size:12px; padding:5px 0; border-bottom:1px dashed #eee;'>⏰ <b>${new Date(act.timestamp).toLocaleTimeString()}</b> — ${act.details}</div>`;
-                });
+            await axios.post(`${API_URL}/tasks`, {
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDesc').value,
+                deadline: document.getElementById('taskDeadline').value,
+                priority: document.getElementById('taskPriority').value,
+                project: projectId
+            });
+            document.getElementById('taskForm').reset();
+            loadTasks(projectId);
+            loadDashboardMetrics();
+        } catch (err) { alert("Erreur lors de l'ajout de la tâche"); }
+    });
+
+    
+    async function loadTasks(projectId) {
+        if (!projectId) return;
+        try {
+            const filter = document.getElementById('filterStatus').value;
+            
+            const res = await axios.get(`${API_URL}/tasks?project=${projectId}`);
+            const container = document.getElementById('tasksContainer');
+            container.innerHTML = '';
+
+            Frontend (F6)
+            const filteredTasks = res.data.filter(t => filter === 'tous' || t.status === filter);
+
+            if (filteredTasks.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:gray;">Aucune tâche trouvée.</p>';
+                return;
             }
-        } catch (err) {}
+
+            filteredTasks.forEach(t => {
+                container.innerHTML += `
+                    <div class="task-card">
+                        <div class="task-header">
+                            <span>${t.title}</span>
+                            <span class="badge badge-${t.priority}">${t.priority.toUpperCase()}</span>
+                        </div>
+                        <p style="margin: 8px 0; font-size:14px; color:#4a5568;">${t.description}</p>
+                        <div style="font-size:12px; color:gray; display:flex; justify-content:space-between;">
+                            <span>📅 Limite: ${new Date(t.deadline).toLocaleDateString()}</span>
+                            <span style="font-weight:bold; color:var(--dark);">⚙️ Statut: ${t.status}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        } catch (err) { console.error(err); }
     }
 
-    function filterTasks() {
-        const text = document.getElementById('searchInput').value.toLowerCase();
-        document.querySelectorAll('.task-card').forEach(card => {
-            card.style.display = card.innerText.toLowerCase().includes(text) ? 'block' : 'none';
-        });
-    }
+    
+    document.getElementById('projectSelector').addEventListener('change', (e) => loadTasks(e.target.value));
+    document.getElementById('filterStatus').addEventListener('change', () => loadTasks(document.getElementById('projectSelector').value));
 
-    function saveAndRender() {
-        localStorage.setItem('my_tasks', JSON.stringify(myTasks));
-        renderTasks();
-    }
+    
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+    });
 
-    function renderTasks() {
-        const list = document.getElementById('taskList');
-        list.innerHTML = "";
-        myTasks.forEach(t => {
-            list.innerHTML += `
-                <div class="task-card ${t.priority === 'Urgent' ? 'urgent' : ''}">
-                    <strong>${t.title}</strong>
-                    <p>${t.description || ''}</p>
-                    <div class="task-info">🕒 Créée le: ${t.createdAt} | Statut: <b>${t.status}</b></div>
-                </div>`;
-        });
-        document.getElementById('statAssigned').innerText = myTasks.length;
-        document.getElementById('statCompleted').innerText = myTasks.filter(t => t.status === 'Terminée').length;
-    }
-
-    function showNotification(msg, type = 'success') {
-        const n = document.getElementById('notification-msg');
-        n.innerText = msg; n.style.color = (type === 'urgent') ? "#e74c3c" : "#27ae60";
-        setTimeout(() => n.innerText = "", 3000);
-    }
-
-    function initApp() {
-        renderTasks();
-        loadActivities();
-        checkDraft();
-        fetchNotifications();
-        
-       
-        setInterval(fetchNotifications, 30000);
-    }
-
-    window.onload = checkSession;
+    
+    window.onload = () => {
+        loadDashboardMetrics();
+        loadProjects();
+    };
 </script>
 </body>
 </html>
