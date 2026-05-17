@@ -171,12 +171,12 @@
         try {
             const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, { method: 'PATCH' });
             if (res.ok) {
-                // حفظ فـ الـ LocalStorage كما هو مطلوب ف الـ Cahier de charges (F10)
+                
                 let archived = JSON.parse(localStorage.getItem('read_notifications')) || [];
                 archived.push({ id, details, readAt: new Date() });
                 localStorage.setItem('read_notifications', JSON.stringify(archived));
 
-                // تحديث اللائحة ف الحين بلا ريفريش
+                
                 unreadNotifications = unreadNotifications.filter(n => n._id !== id);
                 updateNotifUI();
                 showNotification("Notification marquée comme lue");

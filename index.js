@@ -13,8 +13,10 @@ const notificationSchema = new mongoose.Schema({
 });
 const Notification = mongoose.model('Notification', notificationSchema);
 
-const app = express();
 
+const Activity = require('./models/Activity'); 
+
+const app = express();
 
 app.use(cors({
     origin: '*', 

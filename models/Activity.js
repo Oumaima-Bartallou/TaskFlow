@@ -11,6 +11,7 @@ const activitySchema = new mongoose.Schema({
     ref: 'Project',
     required: true
   },
+  user: { 
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -19,6 +20,12 @@ const activitySchema = new mongoose.Schema({
   details: {
     type: String,
     required: true
+  },
+  timestamp: { 
+    type: Date,
+    default: Date.now
+  }
+});
   }
 }, { timestamps: true }); // Génère automatiquement createdAt (l'horodatage)
 

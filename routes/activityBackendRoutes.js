@@ -1,6 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Activity = require('../models/Activity');
+const authMiddleware = require('../middlewares/authMiddleware');
+
+router.get('/projects/:id/activities', authMiddleware, async (req, res) => {
+  try {
+    const activities = await Activity.find({ project: req.params.id })
+      .populate('user', 'name email')
+      .sort({ timestamp: -1 });      
+
 
 // Route GET pour récupérer l'historique des activités d'un projet spécifique
 router.get('/projects/:id/activities', async (req, res) => {
@@ -15,4 +23,24 @@ router.get('/projects/:id/activities', async (req, res) => {
   }
 });
 
+
+const logActivity = async (actionType, projectId, userId, details) => {
+  try {
+    await Activity.create({
+      actionType,
+      project: projectId,
+      user: userId,
+      details
+    });
+    console.log(`✅ Activité enregistrée : ${details}`);
+  } catch (error) {
+    console.error("❌ Erreur lors de l'enregistrement de l'activité:", error.message);
+  }
+};
+
+
+module.exports = {
+  router,
+  logActivity
+};
 module.exports = router;
