@@ -25,6 +25,7 @@ mongoose.connect(mongoURI)
 // --- 3. API Routes ---
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
+app.use('/api/dashboard', require('./routes/dashboard'));
 
 // [GET] 
 app.get('/api/tasks', async (req, res) => {

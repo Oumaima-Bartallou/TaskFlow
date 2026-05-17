@@ -14,6 +14,7 @@ const taskSchema = new mongoose.Schema({
         enum: ['à faire', 'en cours', 'terminé'], 
         default: 'à faire' 
     },
+    deadline: { type: Date },
    
     project: { 
         type: mongoose.Schema.Types.ObjectId, 
