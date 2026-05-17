@@ -38,6 +38,7 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/taskflow")
 app.use('/api/auth', require('./routes/auth.js')); 
 app.use('/api', require('./routes/activityBackendRoutes')); 
 app.use('/api/projects', require('./routes/projects.js'));
+app.use('/api/tasks', require('./routes/tasks.js'));
 
 // 🔔 Routes des Notifications (F8)
 app.get('/api/notifications', async (req, res) => {

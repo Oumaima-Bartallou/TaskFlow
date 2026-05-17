@@ -15,7 +15,7 @@
         header { 
             max-width: 1100px; margin: 0 auto 30px auto; display: flex; 
             justify-content: space-between; align-items: center; background: white; 
-            padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); gap: 20px; 
+            padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); gap: 20px;
         }
         .btn-logout { padding: 8px 16px; background-color: var(--danger); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; flex: 3; }
@@ -160,23 +160,32 @@
         const projectId = document.getElementById('projectSelector').value;
         if (!projectId) return alert("Veuillez d'abord sélectionner un projet !");
 
+        const rawDeadline = document.getElementById('taskDeadline').value;
+        const formattedDeadline = new Date(rawDeadline).toISOString();
+
         try {
             await axios.post(`${API_URL}/tasks`, {
                 title: document.getElementById('taskTitle').value,
-                description: document.getElementById('taskDesc').value,
-                deadline: document.getElementById('taskDeadline').value,
+                description: document.getElementById('taskDesc').value || 'Aucune description',
+                deadline: formattedDeadline, 
                 priority: document.getElementById('taskPriority').value,
                 project: projectId
             });
             document.getElementById('taskForm').reset();
-            loadTasks(projectId);
+            loadTasks(projectId); 
             loadDashboardMetrics();
-        } catch (err) { alert("Erreur lors de l'ajout de la tâche"); }
+        } catch (err) { 
+            console.error(err);
+            alert("Erreur lors de l'ajout de la tâche"); 
+        }
     });
 
-    
+   
     async function loadTasks(projectId) {
-        if (!projectId) return;
+        if (!projectId) {
+            document.getElementById('tasksContainer').innerHTML = '<p style="color: var(--gray); text-align: center; font-style: italic;">Veuillez sélectionner un projet pour voir les tâches.</p>';
+            return;
+        }
         try {
             const filter = document.getElementById('filterStatus').value;
             
@@ -184,30 +193,48 @@
             const container = document.getElementById('tasksContainer');
             container.innerHTML = '';
 
-            Frontend (F6)
             const filteredTasks = res.data.filter(t => filter === 'tous' || t.status === filter);
 
             if (filteredTasks.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:gray;">Aucune tâche trouvée.</p>';
+                container.innerHTML = '<p style="text-align:center; color:gray; font-style: italic;">Aucune tâche trouvée.</p>';
                 return;
             }
 
             filteredTasks.forEach(t => {
                 container.innerHTML += `
-                    <div class="task-card">
+                    <div class="task-card" style="border-left-color: ${t.priority === 'haute' ? 'var(--danger)' : t.priority === 'moyenne' ? '#f39c12' : 'var(--success)'}; position: relative;">
                         <div class="task-header">
                             <span>${t.title}</span>
                             <span class="badge badge-${t.priority}">${t.priority.toUpperCase()}</span>
                         </div>
                         <p style="margin: 8px 0; font-size:14px; color:#4a5568;">${t.description}</p>
-                        <div style="font-size:12px; color:gray; display:flex; justify-content:space-between;">
-                            <span>📅 Limite: ${new Date(t.deadline).toLocaleDateString()}</span>
-                            <span style="font-weight:bold; color:var(--dark);">⚙️ Statut: ${t.status}</span>
+                        <div style="font-size:12px; color:gray; display:flex; justify-content:space-between; align-items: center; margin-top: 10px;">
+                            <span>📅 Limite: ${new Date(t.deadline).toLocaleDateString('fr-FR')}</span>
+                            <span style="font-weight:bold; color:var(--dark);">⚙️ Statut: <span style="color:var(--success);">${t.status}</span></span>
+                            
+                            <button onclick="deleteTask('${t._id}', '${projectId}')" style="padding: 4px 8px; background: var(--danger); color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px;">
+                                Supprimer
+                            </button>
                         </div>
                     </div>
                 `;
             });
         } catch (err) { console.error(err); }
+    }
+
+    
+    async function deleteTask(taskId, projectId) {
+        if (confirm("Voulez-vous vraiment supprimer cette tâche ?")) {
+            try {
+                await axios.delete(`${API_URL}/tasks/${taskId}`);
+                alert("Tâche supprimée avec succès !");
+                loadTasks(projectId); 
+                loadDashboardMetrics(); 
+            } catch (err) {
+                console.error(err);
+                alert("Erreur lors de la suppression de la tâche");
+            }
+        }
     }
 
     
