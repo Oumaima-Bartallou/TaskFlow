@@ -30,6 +30,10 @@ const TaskSchema = new mongoose.Schema({
     },
     project: {
         type: mongoose.Schema.Types.ObjectId,
+    deadline: { type: Date },
+   
+    project: { 
+        type: mongoose.Schema.Types.ObjectId, 
         ref: 'Project',
         required: [true, "Une tâche doit obligatoirement être liée à un projet parent"]
     },

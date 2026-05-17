@@ -9,11 +9,21 @@
             --primary: #3498db; 
             --success: #27ae60; 
             --danger: #e74c3c; 
+            --warning: #f1c40f;
             --dark: #2c3e50; 
         }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: var(--dark); }
         .container { max-width: 650px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin: auto; }
         
+        /* 📊 ستايل المربعات الإحصائية للـ Dashboard */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 25px; }
+        .stat-card { padding: 12px; border-radius: 12px; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 13px; }
+        .stat-projects { background: var(--primary); }
+        .stat-assigned { background: var(--dark); }
+        .stat-completed { background: var(--success); }
+        .stat-overdue { background: var(--danger); }
+        .stat-card span { display: block; font-size: 24px; margin-top: 5px; }
+
         input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
         .btn-add { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
 
@@ -29,6 +39,7 @@
         header { max-width: 650px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; }
         .btn-logout { background-color: #ff4d4d; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 8px; font-weight: bold; }
         .search-box { margin: 20px 0; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .search-box { margin: 20px 0; }
     </style>
 </head>
 <body>
@@ -42,10 +53,20 @@
     </header>
 
     <div class="container">
+        
+        <div class="stats-grid">
+            <div class="stat-card stat-projects">Projets Actifs <span id="countProjects">0</span></div>
+            <div class="stat-card stat-assigned">Tâches Assignées <span id="countAssigned">0</span></div>
+            <div class="stat-card stat-completed">Terminées <span id="countCompleted">0</span></div>
+            <div class="stat-card stat-overdue">En Retard 🔥 <span id="countOverdue">0</span></div>
+        </div>
+
         <h2>🚀 Ajouter une nouvelle tâche</h2>
         
         <input type="text" id="taskTitle" placeholder="Titre de la tâche..." required>
         <textarea id="taskDesc" placeholder="Description détaillée (optionnel)..."></textarea>
+        
+        <input type="date" id="taskDeadline" required> 
         
         <select id="taskPriority">
             <option value="Normal">🟢 Priorité: Normal</option>
@@ -60,7 +81,7 @@
             <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="🔍 Rechercher une tâche par titre...">
         </div>
 
-        <h2>📋 Mes Tâches (MongoDB)</h2>
+        <h2>📋 Mes Tâches Actives (Triées par Priorité)</h2>
         <div id="taskList"></div>
     </div>
 
@@ -104,6 +125,38 @@
                             currentProjectId = newProj._id;
                             console.log("🆕 Nouveau projet créé automatiquement:", currentProjectId);
                         }
+    const API_DASHBOARD_URL = "http://127.0.0.1:3000/api/dashboard";
+    const API_TASKS_URL = "http://127.0.0.1:3000/api/tasks";
+    const API_PROJECTS_URL = "http://127.0.0.1:3000/api/projects"; 
+    
+    let myTasks = [];
+    let currentProjectId = "66463e2a9b1c2d3e4f5a6b7c"; 
+
+    async function getOrCreateProject() {
+        try {
+            const res = await fetch(API_PROJECTS_URL, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+                const projects = await res.json();
+                if (projects && projects.length > 0) {
+                    currentProjectId = projects[0]._id;
+                    console.log("🎯 Projet réel trouvé dans MongoDB:", currentProjectId);
+                } else {
+                    const createRes = await fetch(API_PROJECTS_URL, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ name: "Mon Projet SMI", description: "Projet automatique" })
+                    });
+                    if (createRes.ok) {
+                        const newProj = await createRes.json();
+                        currentProjectId = newProj._id;
+                        console.log("🆕 Nouveau projet créé automatiquement:", currentProjectId);
                     }
                 }
             } catch (err) {
@@ -126,6 +179,29 @@
             } catch (err) {
                 console.error("Erreur réseau lors du chargement:", err);
             }
+   
+    async function loadDashboardData() {
+        try {
+            const res = await fetch(API_DASHBOARD_URL, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                
+               
+                document.getElementById('countProjects').innerText = data.activeProjects;
+                document.getElementById('countAssigned').innerText = data.totalAssigned;
+                document.getElementById('countCompleted').innerText = data.completedTasks;
+                document.getElementById('countOverdue').innerText = data.overdueTasks;
+
+               
+                myTasks = data.tasksList;
+                renderTasks();
+            }
+        } catch (err) {
+            console.error("Erreur lors du chargement du dashboard:", err);
         }
 
         // 3. Ajouter une tâche via POST API
@@ -146,6 +222,25 @@
                 priority: priority === "Urgent" ? "haute" : "moyenne",
                 project: currentProjectId 
             };
+    async function addTask() {
+        const title = document.getElementById('taskTitle').value;
+        const desc = document.getElementById('taskDesc').value;
+        const priority = document.getElementById('taskPriority').value;
+        const deadline = document.getElementById('taskDeadline').value; 
+
+        if (!title || !deadline) {
+            showNotification("⚠️ Le titre et la date limite sont obligatoires", "urgent");
+            return;
+        }
+
+        const taskData = {
+            title: title,
+            description: desc || "Aucune description",
+            status: "à faire", 
+            priority: priority === "Urgent" ? "haute" : "moyenne",
+            deadline: deadline,
+            project: currentProjectId 
+        };
 
             try {
                 const res = await fetch(API_TASKS_URL, {
@@ -169,6 +264,14 @@
                 }
             } catch (err) {
                 console.error("Erreur lors de l'ajout:", err);
+            if (res.ok) {
+                showNotification(priority === 'Urgent' ? "🔥 Tâche URGENTE ajoutée !" : "✅ Tâche ajoutée avec succès");
+                document.getElementById('taskTitle').value = "";
+                document.getElementById('taskDesc').value = "";
+                document.getElementById('taskDeadline').value = "";
+                loadDashboardData(); 
+            } else {
+                alert("Erreur du serveur: " + (data.error || data.message || "Impossible de créer la tâche"));
             }
         }
 
@@ -201,6 +304,48 @@
                         </div>
                     </div>
                 `;
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = ""; 
+
+        if (!myTasks || myTasks.length === 0) {
+            list.innerHTML = `<p style="text-align:center; color:#718096;"><i>Aucune tâche active pour le moment.</i></p>`;
+            return;
+        }
+
+        myTasks.forEach(task => {
+            const isCompleted = task.status === 'Terminée' || task.status === 'completed' || task.status === 'terminé';
+            const isUrgent = task.priority === 'Urgent' || task.priority === 'urgente' || task.priority === 'haute';
+            const dl = task.deadline ? new Date(task.deadline).toLocaleDateString() : 'Pas de date';
+
+            list.innerHTML += `
+                <div class="task-card ${isCompleted ? 'completed' : ''} ${isUrgent ? 'urgent' : ''}">
+                    <strong>${isUrgent ? '⚠️ ' : ''}${task.title}</strong>
+                    <span style="font-size:11px; color:#718096;">[${task.priority}]</span>
+                    <p style="margin: 5px 0;">${task.description || '<i>Aucune description</i>'}</p>
+                    <small style="display:block; margin-bottom:8px; color:#718096;">Date limite: <b>${dl}</b> | Statut: <b>${task.status}</b></small>
+                    
+                    <div class="actions">
+                        <button class="btn-status" onclick="toggleStatus('${task._id}', '${task.status}')">
+                            ${isCompleted ? 'Réouvrir' : 'Terminer'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    async function toggleStatus(id, currentStatus) {
+        
+        const newStatus = (currentStatus === 'terminé' || currentStatus === 'Terminée') ? 'en cours' : 'terminé';
+        try {
+            const res = await fetch(`${API_TASKS_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: newStatus })
             });
         }
 
@@ -223,6 +368,9 @@
                 }
             } catch (err) {
                 console.error("Erreur de mise à jour:", err);
+            if (res.ok) {
+                showNotification("🔄 Statut mis à jour !");
+                loadDashboardData(); 
             }
         }
 
@@ -253,6 +401,32 @@
             await getOrCreateProject();
             await loadTasks();
         };
+    function filterTasks() {
+        const text = document.getElementById('searchInput').value.toLowerCase();
+        const cards = document.querySelectorAll('.task-card');
+        cards.forEach(card => {
+            const content = card.innerText.toLowerCase();
+            card.style.display = content.includes(text) ? 'block' : 'none';
+        });
+    }
+
+    function showNotification(msg, type = 'success') {
+        const n = document.getElementById('notification-msg');
+        n.innerText = msg;
+        n.style.color = (type === 'urgent') ? "#e74c3c" : "#27ae60";
+        setTimeout(() => n.innerText = "", 3000);
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.clear();
+        alert('Déconnexion réussie.');
+        window.location.href = 'login.html';
+    });
+
+    window.onload = async () => {
+        await getOrCreateProject();
+        await loadDashboardData(); 
+    };
     </script>
 </body>
 </html>

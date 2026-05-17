@@ -27,6 +27,10 @@ router.post('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
+// GET /api/tasks/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id).populate('assignedTo', 'name email');
     if (!task) return res.status(404).json({ message: "Tâche introuvable" });
     res.json(task);
   } catch (err) {
@@ -70,4 +74,18 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /api/tasks/my-tasks/:projectId
+router.get('/my-tasks/:projectId', async (req, res) => {
+  try {
+   
+    const tasks = await Task.find({ 
+      project: req.params.projectId,
+      assignedTo: req.user?._id || req.userId 
+    }).populate('assignedTo', 'name email');
+    
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors du filtrage des tâches", error: err.message });
+  }
+});
 module.exports = router;
