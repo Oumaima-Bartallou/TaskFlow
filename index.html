@@ -17,12 +17,12 @@
         
         /* 📊 Style des cartes statistiques du Dashboard */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 25px; }
-        .stat-card { padding: 12px; border-radius: 12px; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 13px; }
+        .stats-card { padding: 12px; border-radius: 12px; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 13px; }
         .stat-projects { background: var(--primary); }
         .stat-assigned { background: var(--dark); }
         .stat-completed { background: var(--success); }
         .stat-overdue { background: var(--danger); }
-        .stat-card span { display: block; font-size: 24px; margin-top: 5px; }
+        .stats-grid .stat-card span { display: block; font-size: 24px; margin-top: 5px; }
 
         input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
         .btn-add { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
@@ -62,6 +62,8 @@
         <h2>🚀 Ajouter une nouvelle tâche</h2>
         <input type="text" id="taskTitle" placeholder="Titre de la tâche..." required>
         <textarea id="taskDesc" placeholder="Description détaillée (optionnel)..."></textarea>
+        
+        <label style="font-weight: bold; color: var(--dark);" for="taskDeadline">Date limite :</label>
         <input type="date" id="taskDeadline" required> 
         
         <select id="taskPriority">
@@ -76,7 +78,7 @@
             <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="🔍 Rechercher une tâche par titre...">
         </div>
 
-        <h2>📋 Mes Tâches Actives (Triées par Priorité)</h2>
+        <h2>📋 Mes Tâches Actives</h2>
         <div id="taskList"></div>
 
         <div class="filter-section" style="margin-top: 30px;">
@@ -101,7 +103,7 @@
         const API_DASHBOARD_URL = "http://127.0.0.1:3000/api/dashboard";
         
         let myTasks = [];
-        let currentProjectId = "66463e2a9b1c2d3e4f5a6b7c"; // ID par défaut
+        let currentProjectId = "66463e2a9b1c2d3e4f5a6b7c"; // ID sécurité par défaut
 
         // 1. Récupérer ou créer automatiquement le projet parent
         async function getOrCreateProject() {
@@ -115,7 +117,7 @@
                     const projects = await res.json();
                     if (projects && projects.length > 0) {
                         currentProjectId = projects[0]._id;
-                        console.log("🎯 Projet réel trouvé dans MongoDB:", currentProjectId);
+                        console.log("🎯 Projet trouvé:", currentProjectId);
                     } else {
                         const createRes = await fetch(API_PROJECTS_URL, {
                             method: 'POST',
@@ -123,12 +125,12 @@
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                             },
-                            body: JSON.stringify({ name: "Mon Projet SMI", description: "Projet automatique" })
+                            body: JSON.stringify({ title: "Mon Projet SMI", description: "Projet automatique" })
                         });
                         if (createRes.ok) {
                             const newProj = await createRes.json();
                             currentProjectId = newProj._id;
-                            console.log("🆕 Nouveau projet créé automatiquement:", currentProjectId);
+                            console.log("🆕 Nouveau projet créé:", currentProjectId);
                         }
                     }
                 }
@@ -191,8 +193,6 @@
                     body: JSON.stringify(taskData)
                 });
 
-                const data = await res.json();
-
                 if (res.ok) {
                     showNotification(priority === 'Urgent' ? "🔥 Tâche URGENTE ajoutée !" : "✅ Tâche ajoutée avec succès");
                     document.getElementById('taskTitle').value = "";
@@ -200,9 +200,10 @@
                     document.getElementById('taskDeadline').value = "";
                     
                     await loadDashboardData(); 
-                    await loadActivities(); // Recharger l'historique après l'ajout
+                    await loadActivities(); 
                 } else {
-                    alert("Erreur du serveur: " + (data.message || "Impossible de créer la tâche"));
+                    const data = await res.json();
+                    alert("Erreur du serveur: " + (data.error || data.message || "Impossible de créer la tâche"));
                 }
             } catch (err) {
                 console.error("Erreur lors de l'ajout:", err);
@@ -220,9 +221,9 @@
             }
 
             myTasks.forEach(task => {
-                const isCompleted = task.status === 'Terminée' || task.status === 'completed' || task.status === 'terminé';
-                const isUrgent = task.priority === 'Urgent' || task.priority === 'urgente' || task.priority === 'haute';
-                const dl = task.deadline ? new Date(task.deadline).toLocaleDateString() : 'Pas de date';
+                const isCompleted = task.status === 'terminé' || task.status === 'Terminée' || task.status === 'completed';
+                const isUrgent = task.priority === 'Urgent' || task.priority === 'haute' || task.priority === 'urgente';
+                const dl = task.deadline ? new Date(task.deadline).toLocaleDateString('fr-FR') : 'Pas de date';
 
                 list.innerHTML += `
                     <div class="task-card ${isCompleted ? 'completed' : ''} ${isUrgent ? 'urgent' : ''}">
@@ -241,12 +242,13 @@
             });
         }
 
-        // 5. Mettre à jour le statut via PUT API
+        // 5. Mettre à jour le statut via PATCH/PUT API
         async function toggleStatus(id, currentStatus) {
-            const newStatus = (currentStatus === 'terminé' || currentStatus === 'Terminée') ? 'en cours' : 'terminé';
+            const isCompleted = currentStatus === 'terminé' || currentStatus === 'Terminée' || currentStatus === 'completed';
+            const newStatus = isCompleted ? 'à faire' : 'terminé';
             try {
-                const res = await fetch(`${API_TASKS_URL}/${id}`, {
-                    method: 'PUT',
+                let res = await fetch(`${API_TASKS_URL}/${id}/status`, { 
+                    method: 'PATCH',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
@@ -254,17 +256,28 @@
                     body: JSON.stringify({ status: newStatus })
                 });
 
+                if (!res.ok) {
+                    res = await fetch(`${API_TASKS_URL}/${id}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                }
+
                 if (res.ok) {
                     showNotification("🔄 Statut mis à jour !");
                     await loadDashboardData(); 
-                    await loadActivities(); // Recharger l'historique après modification
+                    await loadActivities(); 
                 }
             } catch (err) {
                 console.error("Erreur de mise à jour:", err);
             }
         }
 
-        // 6. ⏳ F9: Charger l'historique des activités depuis le serveur
+        // 6. ⏳ Charger l'historique des activités depuis le serveur
         async function loadActivities() {
             try {
                 const res = await fetch(`http://127.0.0.1:3000/api/projects/${currentProjectId}/activities`, {
@@ -323,7 +336,7 @@
         window.onload = async () => {
             await getOrCreateProject();
             await loadDashboardData(); 
-            await loadActivities(); // Appel initial du fil d'activité
+            await loadActivities(); 
         };
     </script>
 </body>
