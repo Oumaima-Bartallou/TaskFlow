@@ -39,4 +39,41 @@ router.get('/:id/tasks', async (req, res) => {
   }
 });
 
+
+// =========================================================================
+// [F8] : Route d'invitation d'un membre par Email
+// =========================================================================
+router.post('/:id/invite', auth, async (req, res) => {
+    try {
+        const { email } = req.body;
+        const project = await Project.findById(req.params.id);
+
+        if (!project) return res.status(404).json({ msg: "Projet non trouvé" });
+
+        
+        if (project.owner.toString() !== req.user.id) {
+            return res.status(403).json({ msg: "Action non autorisée. Seul le propriétaire peut inviter des membres." });
+        }
+
+        
+        const userToInvite = await User.findOne({ email });
+        if (!userToInvite) {
+            return res.status(404).json({ msg: "Aucun utilisateur trouvé avec cet email" });
+        }
+
+        
+        if (project.members.includes(userToInvite._id)) {
+            return res.status(400).json({ msg: "Cet utilisateur est déjà membre du projet" });
+        }
+
+        project.members.push(userToInvite._id);
+        await project.save();
+
+        res.json({ msg: "Membre invité avec succès", members: project.members });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Erreur Serveur");
+    }
+});
+
 module.exports = router;
