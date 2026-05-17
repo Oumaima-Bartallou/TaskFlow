@@ -1,8 +1,17 @@
-require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); 
-const Task = require('./models/Task');
+const cors = require('cors');
+
+const Activity = require('./models/Activity'); 
+
+
+const notificationSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    details: { type: String, required: true },
+    isRead: { type: Boolean, default: false },
+    timestamp: { type: Date, default: Date.now }
+});
+const Notification = mongoose.model('Notification', notificationSchema);
 
 
 const Activity = require('./models/Activity'); 
@@ -11,48 +20,46 @@ const app = express();
 
 app.use(cors({
     origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], 
-// --- 1. Middleware Global ---
-app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
-app.use(express.static(__dirname));
 
-// --- 2. Database Connection ---
 
-const MONGO_URI = "mongodb+srv://oumaimabartallou:oumaima2004@cluster0.z5m6z.mongodb.net/TaskFlow?retryWrites=true&w=majority&appName=Cluster0"; 
-const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/taskflow"; 
-mongoose.connect(mongoURI)
-  .then(() => console.log('✅ Connexion à MongoDB réussie !'))
-  .catch((err) => console.log('❌ Erreur de connexion :', err));
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/taskflow"; 
+const MONGO_URI = "mongodb://oumaimabartallou:oumaima2004@cluster0-shard-00-00.z5m6z.mongodb.net:27017,cluster0-shard-00-01.z5m6z.mongodb.net:27017,cluster0-shard-00-02.z5m6z.mongodb.net:27017/TaskFlow?ssl=true&replicaSet=atlas-z5m6z-shard-0&authSource=admin&retryWrites=true&w=majority"; 
 
-// --- 3. API Routes ---
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/projects', require('./routes/projects'));
-app.use('/api/dashboard', require('./routes/dashboard'));
 
-// [GET] 
-app.get('/api/tasks', async (req, res) => {
-  try {
-    const tasks = await Task.find().sort({ createdAt: -1 });
-    res.status(200).json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("✅ MongoDB Connecté !"))
+    .catch(err => console.error("❌ Erreur MongoDB:", err));
+
+
+app.get('/api/notifications', async (req, res) => {
+    try {
+   
+        const notifs = await Notification.find({ isRead: false }).sort({ timestamp: -1 });
+        res.json(notifs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
+app.patch('/api/notifications/:id/read', async (req, res) => {
+    try {
+        const notif = await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true });
+        res.json({ success: true, notif });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
+// 5️⃣ & 9️⃣ ROUTE DES TASKS + ENREGISTREMENT ACTIVITÉ
 app.post('/api/tasks', async (req, res) => {
     try {
-        console.log("Données reçues:", req.body);
-        
-
         const userId = req.user ? req.user.id : "66463e2a9b1c2d3e4f5a6b7d"; 
 
+    
         await Activity.create({
             actionType: 'création_tâche',
             project: req.body.project || "66463e2a9b1c2d3e4f5a6b7c", 
@@ -60,64 +67,21 @@ app.post('/api/tasks', async (req, res) => {
             details: `a créé la tâche "${req.body.title}"`
         });
 
-        res.status(201).json({ success: true, message: "Taskflow a reçu la tâche et enregistré l'activité !" });
+       
+        await Notification.create({
+            user: userId,
+            details: `Une nouvelle tâche "${req.body.title}" vous a été assignée.`
+        });
+
+        res.status(201).json({ success: true, message: "Activité et Notification créées !" });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
-// [POST] 
-app.post('/api/tasks', async (req, res) => {
-  try {
-    console.log("Données reçues:", req.body);
-    const newTask = new Task(req.body);
-    const savedTask = await newTask.save();
-    res.status(201).json(savedTask);
-  } catch (err) {
-    res.status(400).json({ error: "Could not create task", details: err.message });
-  }
-});
-
-// [patch]
-app.patch('/api/tasks/:id/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['à faire', 'en cours', 'terminé'];
-    
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Statut invalide" });
     }
-
-    const updatedTask = await Task.findByIdAndUpdate(
-      req.params.id, 
-      { status }, 
-      { new: true }
-    );
-
-    if (!updatedTask) return res.status(404).json({ message: "Task not found" });
-    res.status(200).json(updatedTask);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 });
-
-// [DELETE] 
-app.delete('/api/tasks/:id', async (req, res) => {
-  try {
-    const deletedTask = await Task.findByIdAndDelete(req.params.id);
-    if (!deletedTask) return res.status(404).json({ message: "Task not found" });
-    res.status(200).json({ message: "Task deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
 
 app.use('/api', require('./routes/activityBackendRoutes'));
 
-
 const PORT = 3000;
 app.listen(PORT, () => {
-// --- 4. Server Start ---
-const PORT = 3000; 
-app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Serveur prêt sur http://127.0.0.1:${PORT}`);
 });
