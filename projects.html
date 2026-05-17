@@ -14,6 +14,9 @@
         input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
         button:hover { background-color: #0056b3; }
+        .project-header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-export { background-color: #28a745; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; width: auto; }
+        .btn-export:hover { background-color: #218838; }
         .project-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .project-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #007bff; }
         .project-card h3 { margin-top: 0; color: #007bff; }
@@ -40,25 +43,95 @@
         <button onclick="creerProjet()">Créer le Projet</button>
     </div>
 
-    <h2>Mes Projets</h2>
-    <div class="project-list" id="projectsContainer">
-        </div>
+    <div class="project-header-section">
+        <h2>Mes Projets</h2>
+        <button class="btn-export" onclick="exporterEnCSV()">📊 Exporter en CSV (Bonus)</button>
+    </div>
+    
+    <div class="project-list" id="projectsContainer"></div>
 </div>
 
 <script>
-    
     const token = localStorage.getItem('token');
+    let listeDesProjetsGlobal = []; 
 
-    
     if (!token) {
         alert("Veuillez vous connecter d'abord !");
         window.location.href = 'login.html';
     }
 
-    
+    // ----------------------------------------------------
+    // [F7] : Gestion du Brouillon (LocalStorage)
+    // ----------------------------------------------------
+    const storageKey = 'brouillon_project_new';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputTitle = document.getElementById('title');
+        const inputDesc = document.getElementById('description');
+
+        
+        const savedDraft = localStorage.getItem(storageKey);
+        if (savedDraft) {
+            const data = JSON.parse(savedDraft);
+            const confirmRestore = confirm("Voulez-vous restaurer le brouillon du projet précédent ?");
+            if (confirmRestore) {
+                if (inputTitle) inputTitle.value = data.title || '';
+                if (inputDesc) inputDesc.value = data.description || '';
+                console.log("🎯 Brouillon restauré !");
+            } else {
+                localStorage.removeItem(storageKey);
+            }
+        }
+
+        
+        const formBox = document.querySelector('.form-box');
+        if (formBox) {
+            formBox.addEventListener('input', () => {
+                const draftData = {
+                    title: inputTitle?.value || '',
+                    description: inputDesc?.value || ''
+                };
+                localStorage.setItem(storageKey, JSON.stringify(draftData));
+            });
+        }
+    });
+
+    // ----------------------------------------------------
+    // [F8 - Bonus] 
+    // ----------------------------------------------------
+    function exporterEnCSV() {
+        if (listeDesProjetsGlobal.length === 0) {
+            alert("Aucun projet à exporter !");
+            return;
+        }
+
+        
+        let csvContent = "data:text/csv;charset=utf-8,ID,Titre,Description\n";
+
+        
+        listeDesProjetsGlobal.forEach(p => {
+            let id = p._id || '';
+            let title = p.title ? p.title.replace(/"/g, '""') : '';
+            let desc = p.description ? p.description.replace(/"/g, '""') : 'Pas de description';
+            
+            csvContent += `"${id}","${title}","${desc}"\n`;
+        });
+
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "mes_projets_taskflow.csv");
+        document.body.appendChild(link);
+
+        link.click(); 
+        document.body.removeChild(link);
+    }
+    // ----------------------------------------------------
+
     async function chargerProjets() {
         try {
-            const response = await fetch('http://localhost:5000/api/projects', {
+            const response = await fetch('http://localhost:3000/api/projects', {
                 method: 'GET',
                 headers: {
                     'x-auth-token': token
@@ -71,6 +144,7 @@
             }
 
             const projets = await response.json();
+            listeDesProjetsGlobal = projets; 
             const container = document.getElementById('projectsContainer');
             
             if (projets.length === 0) {
@@ -90,7 +164,6 @@
         }
     }
 
-    
     async function creerProjet() {
         const title = document.getElementById('title').value;
         const description = document.getElementById('description').value;
@@ -102,7 +175,7 @@
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/projects', {
+            const response = await fetch('http://fetch(\'http://localhost:3000/api/projects\')', { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -113,6 +186,9 @@
 
             if (response.ok) {
                 
+                localStorage.removeItem(storageKey);
+                console.log("🗑️ Brouillon supprimé suite à la création réussie !");
+
                 document.getElementById('title').value = '';
                 document.getElementById('description').value = '';
                 errorDiv.innerText = '';
@@ -129,5 +205,6 @@
 
     chargerProjets();
 </script>
+// auto save logic
 </body>
 </html>
