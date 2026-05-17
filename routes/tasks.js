@@ -9,14 +9,12 @@ router.post('/', async (req, res) => {
   try {
     const { title, description, priority, status, project, deadline } = req.body;
 
-    
     if (!title || !project || !deadline) {
       return res.status(400).json({ 
         message: "Les champs obligatoires sont manquants (title, project, deadline)." 
       });
     }
 
-    
     const newTask = new Task({ 
         title, 
         description: description || 'Aucune description', 
@@ -42,7 +40,8 @@ router.get('/', async (req, res) => {
         const { project } = req.query; 
         if (!project) return res.status(400).json({ message: "Project ID est requis" });
 
-        const tasks = await Task.find({ project });
+        
+        const tasks = await Task.find({ project }).sort({ createdAt: -1 });
         res.json(tasks);
     } catch (err) {
         res.status(500).json({ message: "Erreur serveur", error: err.message });
@@ -50,28 +49,13 @@ router.get('/', async (req, res) => {
 });
 
 // =========================================================================
-// 3. RÉCUPÉRER UNE TÂCHE PAR SON ID
-// =========================================================================
-router.get('/:id', async (req, res) => {
-  try {
-    const task = await Task.findById(req.params.id).populate('assignedTo', 'name email');
-    if (!task) return res.status(404).json({ message: "Tâche introuvable" });
-    res.json(task);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur serveur", error: err.message });
-  }
-});
-
-// =========================================================================
-// 4. MODIFIER UNE TÂCHE / METTRE À JOUR LE STATUT (PUT)
+// 3. MODIFIER UNE TÂCHE / METTRE À JOUR LE STATUT 
 // =========================================================================
 router.put('/:id', async (req, res) => {
   try {
     const { title, description, priority, status, deadline } = req.body;
     
-    if (priority && !['basse', 'moyenne', 'haute'].includes(priority)) {
-      return res.status(400).json({ message: "Priorité invalide" });
-    }
+    
     if (status && !['à faire', 'en cours', 'terminé'].includes(status)) {
       return res.status(400).json({ message: "Statut invalide" });
     }
@@ -79,7 +63,7 @@ router.put('/:id', async (req, res) => {
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
       { title, description, priority, status, deadline },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true } 
     );
 
     if (!updatedTask) return res.status(404).json({ message: "Tâche introuvable" });
@@ -90,7 +74,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // =========================================================================
-// 5. SUPPRIMER UNE TÂCHE
+// 4. SUPPRIMER UNE TÂCHE
 // =========================================================================
 router.delete('/:id', async (req, res) => {
   try {

@@ -26,14 +26,12 @@ app.use(cors({
 app.use(express.json());
 
 // --- 2. CONNEXION MONGOOSE LOCAL ---
-
 mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/taskflow")
     .then(() => console.log("🍃 MongoDB Connecté avec succès en Local !"))
     .catch(err => console.error("❌ Erreur MongoDB :", err));
 
 // --- 3. ROUTES GENERALES & AUTH ---
 app.use('/api/auth', require('./routes/auth.js')); 
-app.use('/api', require('./routes/activityBackendRoutes')); 
 app.use('/api/projects', require('./routes/projects.js'));
 app.use('/api/tasks', require('./routes/tasks.js'));
 app.use('/api/dashboard', require('./routes/dashboard.js'));
@@ -41,7 +39,7 @@ app.use('/api/dashboard', require('./routes/dashboard.js'));
 
 app.use('/api', require('./routes/activityBackendRoutes').router);
 
-// 🔔 Routes des Notifications (F8 د شيماء)
+
 app.get('/api/notifications', async (req, res) => {
     try {
         const notifs = await Notification.find({ isRead: false }).sort({ timestamp: -1 });
@@ -85,7 +83,6 @@ app.post('/api/tasks', async (req, res) => {
 });
 
 // --- 5. DEMARRAGE DU SERVEUR ---
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Serveur prêt sur http://127.0.0.1:${PORT}`);
