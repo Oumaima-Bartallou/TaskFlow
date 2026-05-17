@@ -4,8 +4,14 @@ const mongoose = require('mongoose');
 const cors = require('cors'); 
 const Task = require('./models/Task');
 
+
+const Activity = require('./models/Activity'); 
+
 const app = express();
 
+app.use(cors({
+    origin: '*', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], 
 // --- 1. Middleware Global ---
 app.use(cors({
     origin: '*', 
@@ -17,6 +23,7 @@ app.use(express.static(__dirname));
 
 // --- 2. Database Connection ---
 
+const MONGO_URI = "mongodb+srv://oumaimabartallou:oumaima2004@cluster0.z5m6z.mongodb.net/TaskFlow?retryWrites=true&w=majority&appName=Cluster0"; 
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/taskflow"; 
 mongoose.connect(mongoURI)
   .then(() => console.log('✅ Connexion à MongoDB réussie !'))
@@ -38,6 +45,24 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
+
+app.post('/api/tasks', async (req, res) => {
+    try {
+        console.log("Données reçues:", req.body);
+        
+
+        const userId = req.user ? req.user.id : "66463e2a9b1c2d3e4f5a6b7d"; 
+
+        await Activity.create({
+            actionType: 'création_tâche',
+            project: req.body.project || "66463e2a9b1c2d3e4f5a6b7c", 
+            user: userId,
+            details: `a créé la tâche "${req.body.title}"`
+        });
+
+        res.status(201).json({ success: true, message: "Taskflow a reçu la tâche et enregistré l'activité !" });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
 // [POST] 
 app.post('/api/tasks', async (req, res) => {
   try {
@@ -84,6 +109,13 @@ app.delete('/api/tasks/:id', async (req, res) => {
   }
 });
 
+
+
+app.use('/api', require('./routes/activityBackendRoutes'));
+
+
+const PORT = 3000;
+app.listen(PORT, () => {
 // --- 4. Server Start ---
 const PORT = 3000; 
 app.listen(PORT, "0.0.0.0", () => {
