@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - TaskFlow</title>
+</head>
+<body>
+
+    <div class="auth-container">
+        <h2>Se connecter à TaskFlow 🔐</h2>
+        <p>Plateforme collaborative pour SMI S4</p>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Adresse Email :</label>
+                <input type="email" id="email" placeholder="exemple@domaine.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mot de passe :</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-submit">Se connecter</button>
+        </form>
+
+        <p id="message" style="color: red; margin-top: 15px; font-weight: bold;"></p>
+
+        <p class="auth-switch">Vous n'avez pas de compte ? <a href="register.html">S'inscrire</a></p>
+    </div>
+
+    <script>
+    
+    const API_URL = "http://127.0.0.1:3000"; 
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault(); 
+        
+        console.log("🚀 1. Formulaire Login soumis.");
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const messageDiv = document.getElementById('message');
+
+        messageDiv.innerText = "Connexion en cours...";
+        messageDiv.style.color = "orange";
+
+        try {
+            
+            console.log("📡 2. Envoi de la requête Login à : " + `${API_URL}/api/auth/login`);
+            
+            const res = await fetch(`${API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            console.log("📥 3. Réponse reçue. Status : " + res.status);
+            const data = await res.json();
+
+            if (res.ok) {
+                console.log("✅ 4. Connexion réussie ! Token reçu.");
+                messageDiv.style.color = "green";
+                messageDiv.innerText = "Connexion réussie ! Redirection...";
+                
+                
+                if(data.token) localStorage.setItem('token', data.token);
+                
+                alert("Connexion réussie !");
+                window.location.href = 'index.html'; 
+            } else {
+                console.warn("⚠️ 4. Échec de connexion :", data.message);
+                messageDiv.style.color = "red";
+                messageDiv.innerText = data.message || "Email ou mot de passe incorrect.";
+            }
+        } catch (err) {
+            console.error("❌ 4. Erreur lors du Login :", err);
+            messageDiv.style.color = "red";
+            messageDiv.innerText = "Erreur de connexion au serveur.";
+        }
+    });
+    </script>
+</body>
+</html>
