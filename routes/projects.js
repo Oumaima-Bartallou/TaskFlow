@@ -27,5 +27,16 @@ router.get('/', auth, async (req, res) => {
         res.status(500).send('Erreur Serveur');
     }
 });
+const Task = require('../models/Task'); 
+
+// GET /api/projects/:id/tasks
+router.get('/:id/tasks', async (req, res) => {
+  try {
+    const tasks = await Task.find({ project: req.params.id });
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors de la récupération des tâches du projet", error: err.message });
+  }
+});
 
 module.exports = router;

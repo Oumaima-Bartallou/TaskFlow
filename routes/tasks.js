@@ -24,6 +24,9 @@ router.post('/', async (req, res) => {
 });
 
 // 2. Récupérer une tâche par son ID
+router.get('/:id', async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
 // GET /api/tasks/:id
 router.get('/:id', async (req, res) => {
   try {
@@ -70,6 +73,7 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 });
+
 // GET /api/tasks/my-tasks/:projectId
 router.get('/my-tasks/:projectId', async (req, res) => {
   try {

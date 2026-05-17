@@ -38,6 +38,7 @@
         
         header { max-width: 650px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; }
         .btn-logout { background-color: #ff4d4d; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 8px; font-weight: bold; }
+        .search-box { margin: 20px 0; border-bottom: 2px solid #eee; padding-bottom: 15px; }
         .search-box { margin: 20px 0; }
     </style>
 </head>
@@ -77,7 +78,7 @@
         <div id="notification-msg"></div>
 
         <div class="search-box">
-            <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="🔍 Rechercher une tâche...">
+            <input type="text" id="searchInput" onkeyup="filterTasks()" placeholder="🔍 Rechercher une tâche par titre...">
         </div>
 
         <h2>📋 Mes Tâches Actives (Triées par Priorité)</h2>
@@ -85,13 +86,45 @@
     </div>
 
     <script>
-    
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert("Accès refusé. Veuillez vous connecter d'abord.");
-        window.location.href = 'login.html';
-    }
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("Accès refusé. Veuillez vous connecter d'abord.");
+            window.location.href = 'login.html';
+        }
 
+        const API_TASKS_URL = "http://127.0.0.1:3000/api/tasks";
+        const API_PROJECTS_URL = "http://127.0.0.1:3000/api/projects"; 
+        
+        let myTasks = [];
+        let currentProjectId = "66463e2a9b1c2d3e4f5a6b7c"; // ID par défaut au cas où
+
+        // 1. Récupérer ou créer le projet parent
+        async function getOrCreateProject() {
+            try {
+                const res = await fetch(API_PROJECTS_URL, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    const projects = await res.json();
+                    if (projects && projects.length > 0) {
+                        currentProjectId = projects[0]._id;
+                        console.log("🎯 Projet réel trouvé dans MongoDB:", currentProjectId);
+                    } else {
+                        const createRes = await fetch(API_PROJECTS_URL, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ name: "Mon Projet SMI", description: "Projet automatique" })
+                        });
+                        if (createRes.ok) {
+                            const newProj = await createRes.json();
+                            currentProjectId = newProj._id;
+                            console.log("🆕 Nouveau projet créé automatiquement:", currentProjectId);
+                        }
     const API_DASHBOARD_URL = "http://127.0.0.1:3000/api/dashboard";
     const API_TASKS_URL = "http://127.0.0.1:3000/api/tasks";
     const API_PROJECTS_URL = "http://127.0.0.1:3000/api/projects"; 
@@ -126,12 +159,26 @@
                         console.log("🆕 Nouveau projet créé automatiquement:", currentProjectId);
                     }
                 }
+            } catch (err) {
+                console.log("⚠️ Impossible de vérifier les projets, utilisation de l'ID par défaut.");
             }
-        } catch (err) {
-            console.log("⚠️ Impossible de vérifier les projets, utilisation de l'ID par défaut.");
         }
-    }
 
+        // 2. Charger les tâches depuis l'API MongoDB (On utilise la route GET /api/projects/:id/tasks)
+        async function loadTasks() {
+            try {
+                const res = await fetch(`${API_PROJECTS_URL}/${currentProjectId}/tasks`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    myTasks = await res.json();
+                    renderTasks();
+                }
+            } catch (err) {
+                console.error("Erreur réseau lors du chargement:", err);
+            }
    
     async function loadDashboardData() {
         try {
@@ -156,8 +203,25 @@
         } catch (err) {
             console.error("Erreur lors du chargement du dashboard:", err);
         }
-    }
 
+        // 3. Ajouter une tâche via POST API
+        async function addTask() {
+            const title = document.getElementById('taskTitle').value;
+            const desc = document.getElementById('taskDesc').value;
+            const priority = document.getElementById('taskPriority').value;
+
+            if (!title) {
+                showNotification("⚠️ Le titre est obligatoire", "urgent");
+                return;
+            }
+
+            const taskData = {
+                title: title,
+                description: desc || "Aucune description",
+                status: "à faire", 
+                priority: priority === "Urgent" ? "haute" : "moyenne",
+                project: currentProjectId 
+            };
     async function addTask() {
         const title = document.getElementById('taskTitle').value;
         const desc = document.getElementById('taskDesc').value;
@@ -178,18 +242,28 @@
             project: currentProjectId 
         };
 
-        try {
-            const res = await fetch(API_TASKS_URL, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(taskData)
-            });
+            try {
+                const res = await fetch(API_TASKS_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(taskData)
+                });
 
-            const data = await res.json();
+                const data = await res.json();
 
+                if (res.ok) {
+                    showNotification(priority === 'Urgent' ? "🔥 Tâche URGENTE ajoutée !" : "✅ Tâche ajoutée avec succès");
+                    document.getElementById('taskTitle').value = "";
+                    document.getElementById('taskDesc').value = "";
+                    loadTasks(); 
+                } else {
+                    alert("Erreur du serveur: " + (data.error || data.message || "Impossible de créer la tâche"));
+                }
+            } catch (err) {
+                console.error("Erreur lors de l'ajout:", err);
             if (res.ok) {
                 showNotification(priority === 'Urgent' ? "🔥 Tâche URGENTE ajoutée !" : "✅ Tâche ajoutée avec succès");
                 document.getElementById('taskTitle').value = "";
@@ -199,11 +273,37 @@
             } else {
                 alert("Erreur du serveur: " + (data.error || data.message || "Impossible de créer la tâche"));
             }
-        } catch (err) {
-            console.error("Erreur lors de l'ajout:", err);
         }
-    }
 
+        // 4. Afficher les tâches dynamiquement
+        function renderTasks() {
+            const list = document.getElementById('taskList');
+            list.innerHTML = ""; 
+
+            if (!myTasks || myTasks.length === 0) {
+                list.innerHTML = `<p style="text-align:center; color:#718096;"><i>Aucune tâche pour le moment.</i></p>`;
+                return;
+            }
+
+            const sortedTasks = [...myTasks].reverse();
+
+            sortedTasks.forEach(task => {
+                const isCompleted = task.status === 'Terminée' || task.status === 'completed' || task.status === 'terminé';
+                const isUrgent = task.priority === 'Urgent' || task.priority === 'urgente' || task.priority === 'haute';
+
+                list.innerHTML += `
+                    <div class="task-card ${isCompleted ? 'completed' : ''} ${isUrgent ? 'urgent' : ''}">
+                        <strong>${isUrgent ? '⚠️ ' : ''}${task.title}</strong> <span style="font-size:11px; color:#718096;">[${task.priority}]</span>
+                        <p style="margin: 5px 0;">${task.description || '<i>Aucune description</i>'}</p>
+                        <small style="color: #999;">Statut: <b>${task.status}</b></small>
+                        
+                        <div class="actions">
+                            <button class="btn-status" onclick="toggleStatus('${task._id}', '${task.status}')">
+                                ${isCompleted ? 'Réouvrir' : 'Terminer'}
+                            </button>
+                        </div>
+                    </div>
+                `;
     function renderTasks() {
         const list = document.getElementById('taskList');
         list.innerHTML = ""; 
@@ -247,16 +347,60 @@
                 },
                 body: JSON.stringify({ status: newStatus })
             });
+        }
 
+        // 5. Mettre à jour le statut via PATCH (Route de la Fonctionnalité 3)
+        async function toggleStatus(id, currentStatus) {
+            const newStatus = (currentStatus === 'à faire' || currentStatus === 'En cours') ? 'terminé' : 'à faire';
+            try {
+                const res = await fetch(`${API_TASKS_URL}/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (res.ok) {
+                    showNotification("🔄 Statut mis à jour !");
+                    loadTasks();
+                }
+            } catch (err) {
+                console.error("Erreur de mise à jour:", err);
             if (res.ok) {
                 showNotification("🔄 Statut mis à jour !");
                 loadDashboardData(); 
             }
-        } catch (err) {
-            console.error("Erreur de mise à jour:", err);
         }
-    }
 
+        // 6. Filtrer localement dans la recherche
+        function filterTasks() {
+            const text = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.task-card');
+            cards.forEach(card => {
+                const content = card.innerText.toLowerCase();
+                card.style.display = content.includes(text) ? 'block' : 'none';
+            });
+        }
+
+        function showNotification(msg, type = 'success') {
+            const n = document.getElementById('notification-msg');
+            n.innerText = msg;
+            n.style.color = (type === 'urgent') ? "#e74c3c" : "#27ae60";
+            setTimeout(() => n.innerText = "", 3000);
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            alert('Déconnexion réussie.');
+            window.location.href = 'login.html';
+        });
+
+        window.onload = async () => {
+            await getOrCreateProject();
+            await loadTasks();
+        };
     function filterTasks() {
         const text = document.getElementById('searchInput').value.toLowerCase();
         const cards = document.querySelectorAll('.task-card');
