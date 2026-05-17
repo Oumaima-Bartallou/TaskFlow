@@ -14,7 +14,7 @@ const notificationSchema = new mongoose.Schema({
 const Notification = mongoose.model('Notification', notificationSchema);
 
 
-const Activity = require('./models/Activity'); 
+//const Activity = require('./models/Activity'); 
 
 const app = express();
 
@@ -79,7 +79,7 @@ app.post('/api/tasks', async (req, res) => {
     }
 });
 
-app.use('/api', require('./routes/activityBackendRoutes'));
+app.use('/api', require('./routes/activityBackendRoutes').router);
 
 const PORT = 3000;
 app.listen(PORT, () => {
