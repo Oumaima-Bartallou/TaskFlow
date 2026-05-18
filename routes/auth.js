@@ -1,55 +1,63 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const bcrypt = require('bcryptjs'); 
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 
-// --- 1. ROUTE D'INSCRIPTION ---
+// [POST] /api/auth/register 
 router.post('/register', async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
-        
-        let userExists = await User.findOne({ email });
-        if (userExists) return res.status(400).json({ message: "Cet email est déjà utilisé." });
+  try {
+    const { username, email, password } = req.body;
 
-        const newUser = new User({ name, email, password });
-        await newUser.save();
-
-        res.status(201).json({ message: "Utilisateur créé avec succès !" });
-    } catch (err) {
-        res.status(500).json({ message: "Erreur serveur: " + err.message });
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "Veuillez remplir tous les champs." });
     }
+
+    
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "Cet email est déjà utilisé." });
+    }
+
+    
+    const newUser = new User({ username, email, password });
+    await newUser.save();
+
+   
+    const secretKey = process.env.JWT_SECRET || "SECRET_SMI_S4_KEY_123";
+    const token = jwt.sign({ id: newUser._id }, secretKey, { expiresIn: '1h' });
+
+    res.status(201).json({ token, message: "Utilisateur créé avec succès !" });
+  } catch (err) {
+    console.error("Erreur Register Server:", err);
+    res.status(500).json({ message: "Erreur serveur: " + err.message });
+  }
 });
 
-// --- 2. ROUTE DE CONNEXION  ---
+// [POST] /api/auth/login 
 router.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ message: "Email ou mot de passe incorrect." });
-
-        
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: "Email ou mot de passe incorrect." });
-
-        
-        const token = jwt.sign(
-            { id: user._id }, 
-            process.env.JWT_SECRET || "MonSuperSecretSMI2026", 
-            { expiresIn: '3h' } 
-        );
-
-        
-        res.status(200).json({ 
-            token, 
-            message: "Connexion réussie ! Redirection..." 
-        });
-
-    } catch (err) {
-        res.status(500).json({ message: "Erreur serveur: " + err.message });
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "Veuillez remplir tous les champs." });
     }
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Email ou mot de passe incorrect." });
+
+    
+    if (user.password !== password) {
+      return res.status(400).json({ message: "Email ou mot de passe incorrect." });
+    }
+
+    const secretKey = process.env.JWT_SECRET || "SECRET_SMI_S4_KEY_123";
+    const token = jwt.sign({ id: user._id }, secretKey, { expiresIn: '1h' });
+
+    res.status(200).json({ token });
+  } catch (err) {
+    console.error("Erreur Login Server:", err);
+    res.status(500).json({ message: "Erreur serveur lors de la connexion." });
+  }
 });
 
 module.exports = router;
