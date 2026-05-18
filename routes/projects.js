@@ -87,7 +87,7 @@ router.post('/:projectId/invite', authMiddleware, async (req, res) => {
     project.members.push(userToInvite._id);
     await project.save();
 
-    res.status(200).json({ message: `L'utilisateur ${userToInvite.username} زُهير أضيف بنجاح!` });
+    res.status(200).json({ message: `L'utilisateur ${userToInvite.username} ajout succes !` });
   } catch (err) {
     console.error("Erreur Invite Member:", err);
     res.status(500).json({ message: "Erreur serveur lors de l'invitation." });
