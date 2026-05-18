@@ -23,6 +23,14 @@
         .stat-projects { background: var(--primary); } .stat-assigned { background: var(--dark); } 
         .stat-completed { background: var(--success); } .stat-overdue { background: var(--danger); }
         .stat-card span { display: block; font-size: 24px; margin-top: 5px; font-weight: 800; }
+       
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 25px; }
+        .stat-card { padding: 12px; border-radius: 12px; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 13px; }
+        .stat-projects { background: var(--primary); }
+        .stat-assigned { background: var(--dark); }
+        .stat-completed { background: var(--success); }
+        .stat-overdue { background: var(--danger); }
+        .stat-card span { display: block; font-size: 24px; margin-top: 5px; }
 
         /* 🏢 Layout Grids */
         .workspace-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; max-width: 1100px; margin: 0 auto; }
