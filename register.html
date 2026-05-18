@@ -32,13 +32,12 @@
     <div id="errorBox" class="error-msg"></div>
     <div id="successBox" class="success-msg">L'inscription a réussi ! Redirection vers la page de connexion...</div>
 
-    <p style="margin-top: 20px; font-size: 14px;">Vous avez déjà un compte ? <a href="login.html">Se connecter</a></p>
+    <p style="margin-top: 20px; font-size: 14px;">Vous avez déjà un compte ? <a href="/login.html">Se connecter</a></p>
 </div>
 
 <script>
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
-        e.preventDefault(); // Empêcher le rechargement de la page
-        
+        e.preventDefault(); 
         
         const username = document.getElementById('regName').value;
         const email = document.getElementById('regEmail').value;
@@ -47,30 +46,27 @@
         const errorBox = document.getElementById('errorBox');
         const successBox = document.getElementById('successBox');
         
-        // Réinitialisation des alertes
         errorBox.style.display = 'none';
         successBox.style.display = 'none';
 
         try {
             
-            const response = await axios.post('http://127.0.0.1:3000/api/auth/register', {
+            const response = await axios.post('/api/auth/register', {
                 username, 
                 email,
                 password
             });
 
-            // Si le serveur répond avec un succès (200 ou 201)
             if (response.status === 201 || response.status === 200) {
                 successBox.style.display = 'block';
-                // Redirection automatique vers la page de login après 2 secondes
                 setTimeout(() => {
-                    window.location.href = 'login.html';
+                    
+                    window.location.href = '/login.html';
                 }, 2000);
             }
         } catch (error) {
             errorBox.style.display = 'block';
             if (error.response) {
-                
                 errorBox.innerText = error.response.data.message || error.response.data.error || "Une erreur est survenue lors de l'inscription.";
             } else {
                 errorBox.innerText = "Erreur : Impossible de contacter le serveur backend. Vérifiez qu'il est bien démarré.";

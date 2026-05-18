@@ -1,88 +1,81 @@
 const express = require('express');
 const router = express.Router();
-const Task = require('../models/Task');
+const Task = require('../models/Task'); 
+const jwt = require('jsonwebtoken');
 
-// =========================================================================
-// 1. AJOUTER UNE TÂCHE 
-// =========================================================================
-router.post('/', async (req, res) => {
+// --- Middleware ---
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1] || req.headers['authorization'];
+  if (!token) return res.status(401).json({ message: "Accès refusé." });
+
   try {
-    const { title, description, priority, status, project, deadline } = req.body;
+    const secretKey = process.env.JWT_SECRET || "SECRET_SMI_S4_KEY_123";
+    req.user = jwt.verify(token, secretKey); 
+    next();
+  } catch (err) {
+    res.status(400).json({ message: "Token invalide." });
+  }
+};
 
-    if (!title || !project || !deadline) {
-      return res.status(400).json({ 
-        message: "Les champs obligatoires sont manquants (title, project, deadline)." 
-      });
-    }
+// 1️⃣ [POST] /api/tasks 
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    const { title, description, deadline, priority, project } = req.body;
+    if (!title || !project) return res.status(400).json({ message: "Champs obligatoires manquants." });
 
-    const newTask = new Task({ 
-        title, 
-        description: description || 'Aucune description', 
-        priority: priority || 'moyenne', 
-        status: status || 'à faire', 
-        project, 
-        deadline 
+    const newTask = new Task({
+      title,
+      description,
+      deadline,
+      priority: priority || 'moyenne',
+      project,
+      status: 'à faire' 
     });
-    
+
     await newTask.save();
-    res.status(201).json(newTask); 
+    res.status(201).json(newTask);
   } catch (err) {
-    console.error("❌ ERROR DETAIL IN TERMINAL:", err);
-    res.status(400).json({ message: "Erreur lors de la création", error: err.message });
+    res.status(500).json({ message: "Erreur serveur: " + err.message });
   }
 });
 
-// =========================================================================
-// 2. RÉCUPÉRER TOUTES LES TÂCHES D'UN PROJET 
-// =========================================================================
-router.get('/', async (req, res) => {
-    try {
-        const { project } = req.query; 
-        if (!project) return res.status(400).json({ message: "Project ID est requis" });
+// 2️⃣ [GET] /api/tasks 
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const { project } = req.query;
+    if (!project) return res.status(400).json({ message: "Le paramètre project est requis." });
 
-        
-        const tasks = await Task.find({ project }).sort({ createdAt: -1 });
-        res.json(tasks);
-    } catch (err) {
-        res.status(500).json({ message: "Erreur serveur", error: err.message });
-    }
+    const tasks = await Task.find({ project });
+    res.status(200).json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur serveur." });
+  }
 });
 
-// =========================================================================
-// 3. MODIFIER UNE TÂCHE / METTRE À JOUR LE STATUT 
-// =========================================================================
-router.put('/:id', async (req, res) => {
+// 3️⃣ [PUT] /api/tasks/:taskId 
+router.put('/:taskId', authMiddleware, async (req, res) => {
   try {
-    const { title, description, priority, status, deadline } = req.body;
-    
-    
-    if (status && !['à faire', 'en cours', 'terminé'].includes(status)) {
-      return res.status(400).json({ message: "Statut invalide" });
-    }
-
+    const { status } = req.body;
     const updatedTask = await Task.findByIdAndUpdate(
-      req.params.id,
-      { title, description, priority, status, deadline },
-      { new: true, runValidators: true } 
+      req.params.taskId,
+      { status },
+      { returnDocument: 'after' } 
     );
-
-    if (!updatedTask) return res.status(404).json({ message: "Tâche introuvable" });
-    res.json(updatedTask);
+    if (!updatedTask) return res.status(404).json({ message: "Tâche non trouvée." });
+    res.status(200).json(updatedTask);
   } catch (err) {
-    res.status(400).json({ message: "Erreur lors de la modification", error: err.message });
+    res.status(500).json({ message: "Erreur lors de la mise à jour." });
   }
 });
 
-// =========================================================================
-// 4. SUPPRIMER UNE TÂCHE
-// =========================================================================
-router.delete('/:id', async (req, res) => {
+// 4️⃣ [DELETE] /api/tasks/:taskId
+router.delete('/:taskId', authMiddleware, async (req, res) => {
   try {
-    const deletedTask = await Task.findByIdAndDelete(req.params.id);
-    if (!deletedTask) return res.status(404).json({ message: "Tâche introuvable" });
-    res.json({ message: "Tâche supprimée avec succès" });
+    const deletedTask = await Task.findByIdAndDelete(req.params.taskId);
+    if (!deletedTask) return res.status(404).json({ message: "Tâche non trouvée." });
+    res.status(200).json({ message: "Tâche supprimée avec succès !" });
   } catch (err) {
-    res.status(500).json({ message: "Erreur serveur", error: err.message });
+    res.status(500).json({ message: "Erreur lors de la suppression." });
   }
 });
 

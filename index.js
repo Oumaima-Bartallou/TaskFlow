@@ -1,89 +1,86 @@
-require('dotenv').config(); 
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-
-const Activity = require('./models/Activity'); 
-
-const notificationSchema = new mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    details: { type: String, required: true },
-    isRead: { type: Boolean, default: false },
-    timestamp: { type: Date, default: Date.now }
-});
-
-const Notification = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
+const mongoose = require('mongoose');
+const path = require('path');
+require('dotenv').config(); 
 
 const app = express();
 
-// --- 1. CONFIGURATION CORS ---
-app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use(express.json());
-
-// --- 2. CONNEXION MONGOOSE LOCAL ---
-mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/taskflow")
-    .then(() => console.log("🍃 MongoDB Connecté avec succès en Local !"))
-    .catch(err => console.error("❌ Erreur MongoDB :", err));
-
-// --- 3. ROUTES GENERALES & AUTH ---
-app.use('/api/auth', require('./routes/auth.js')); 
-app.use('/api/projects', require('./routes/projects.js'));
-app.use('/api/tasks', require('./routes/tasks.js'));
-app.use('/api/dashboard', require('./routes/dashboard.js'));
+// ==========================================
+// 1. MIDDLEWARES 
+// ==========================================
+app.use(cors());
+app.use(express.json()); 
 
 
-app.use('/api', require('./routes/activityBackendRoutes').router);
+app.use(express.static(path.join(__dirname, 'public'))); 
 
 
-app.get('/api/notifications', async (req, res) => {
-    try {
-        const notifs = await Notification.find({ isRead: false }).sort({ timestamp: -1 });
-        res.json(notifs);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+app.get('/index.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.patch('/api/notifications/:id/read', async (req, res) => {
-    try {
-        const notif = await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true });
-        res.json({ success: true, notif });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+app.get('/register.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'register.html'));
 });
 
-// --- 4. EXEMPLE POST TASK ---
-app.post('/api/tasks', async (req, res) => {
-    try {
-        console.log("Données reçues:", req.body);
-        const userId = req.user ? req.user.id : "66463e2a9b1c2d3e4f5a6b7d"; 
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
 
-        await Activity.create({
-            actionType: 'création_tâche',
-            project: req.body.project || "66463e2a9b1c2d3e4f5a6b7c", 
-            user: userId,
-            details: `a créé la tâche "${req.body.title}"`
+app.get('/projets.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'projects.html'));
+});
+
+
+app.get('/', (req, res) => {
+    res.redirect('/register.html');
+});
+
+
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/projects', require('./routes/projects'));
+app.use('/api/tasks', require('./routes/tasks'));
+
+
+app.get('/api/dashboard', async (req, res) => {
+    try {
+        const Project = require('./models/Project');
+        const Task = require('./models/Task');
+
+        const activeProjects = await Project.countDocuments();
+        const totalAssigned = await Task.countDocuments({ status: { $ne: 'terminé' } });
+        const completedTasks = await Task.countDocuments({ status: 'terminé' });
+        
+        
+        const overdueTasks = await Task.countDocuments({ 
+            deadline: { $lt: new Date() }, 
+            status: { $ne: 'terminé' } 
         });
 
-        await Notification.create({
-            user: userId,
-            details: `Une nouvelle tâche "${req.body.title}" vous a été assignée.`
+        res.status(200).json({
+            activeProjects,
+            totalAssigned,
+            completedTasks,
+            overdueTasks
         });
-
-        res.status(201).json({ success: true, message: "Activité et Notification créées !" });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ message: "Erreur Dashboard Metrics" });
     }
 });
 
-// --- 5. DEMARRAGE DU SERVEUR ---
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Serveur prêt sur http://127.0.0.1:${PORT}`);
-});
+
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/taskflow"; 
+
+mongoose.connect(MONGO_URI)
+  .then(() => {
+      console.log("🚀 Connecté avec succès à MongoDB !");
+      
+      const PORT = process.env.PORT || 3000;
+      app.listen(PORT, () => {
+          console.log(`🔥 Serveur en cours d'exécution sur: http://127.0.0.1:${PORT}`);
+      });
+  })
+  .catch(err => {
+      console.error("❌ Échec de la connexion à MongoDB :", err.message);
+  });

@@ -23,14 +23,6 @@
         .stat-projects { background: var(--primary); } .stat-assigned { background: var(--dark); } 
         .stat-completed { background: var(--success); } .stat-overdue { background: var(--danger); }
         .stat-card span { display: block; font-size: 24px; margin-top: 5px; font-weight: 800; }
-       
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 25px; }
-        .stat-card { padding: 12px; border-radius: 12px; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 13px; }
-        .stat-projects { background: var(--primary); }
-        .stat-assigned { background: var(--dark); }
-        .stat-completed { background: var(--success); }
-        .stat-overdue { background: var(--danger); }
-        .stat-card span { display: block; font-size: 24px; margin-top: 5px; }
 
         /* 🏢 Layout Grids */
         .workspace-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; max-width: 1100px; margin: 0 auto; }
@@ -47,6 +39,10 @@
         .task-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; color: white; }
         .badge-haute { background: var(--danger); } .badge-moyenne { background: #f39c12; } .badge-basse { background: var(--success); }
+
+        /* 📁 Navigation Button Style */
+        .btn-nav { margin: 20px auto; display: block; padding: 12px 24px; background: var(--dark); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-nav:hover { background: #1a252f; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
@@ -118,14 +114,20 @@
     </div>
 </div>
 
+<button class="btn-nav" onclick="window.location.href='/projets.html'">Accéder à mes projets & Membres 📁</button>
+
 <script>
+    
     const token = localStorage.getItem('token');
-    if (!token) window.location.href = 'login.html';
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    if (!token) {
+        window.location.href = '/login.html';
+    } else {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
 
-    const API_URL = 'http://127.0.0.1:3000/api';
+    const API_URL = '/api';
 
-   
+    
     async function loadDashboardMetrics() {
         try {
             const res = await axios.get(`${API_URL}/dashboard`);
@@ -133,10 +135,12 @@
             document.getElementById('countAssigned').innerText = res.data.totalAssigned || 0;
             document.getElementById('countCompleted').innerText = res.data.completedTasks || 0;
             document.getElementById('countOverdue').innerText = res.data.overdueTasks || 0;
-        } catch (err) { console.error(err); }
+        } catch (err) { 
+            console.error("Erreur Dashboard Metrics:", err); 
+        }
     }
 
-
+   
     document.getElementById('projectForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         try {
@@ -147,10 +151,15 @@
             document.getElementById('projectForm').reset();
             loadProjects(); 
             loadDashboardMetrics();
-        } catch (err) { alert("Erreur lors de la création du projet"); }
+            alert("Projet créé avec succès ! 🎉");
+        } catch (err) { 
+            console.error(err);
+            const errorMsg = err.response?.data?.message || "Erreur lors de la création du projet";
+            alert(errorMsg);
+        }
     });
 
-   
+    
     async function loadProjects() {
         try {
             const res = await axios.get(`${API_URL}/projects`);
@@ -159,10 +168,12 @@
             res.data.forEach(p => {
                 selector.innerHTML += `<option value="${p._id}">${p.title}</option>`;
             });
-        } catch (err) { console.error(err); }
+        } catch (err) { 
+            console.error("Erreur chargement projets:", err); 
+        }
     }
 
-   
+    
     document.getElementById('taskForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const projectId = document.getElementById('projectSelector').value;
@@ -182,9 +193,11 @@
             document.getElementById('taskForm').reset();
             loadTasks(projectId); 
             loadDashboardMetrics();
+            alert("Tâche ajoutée avec succès ! 🚀");
         } catch (err) { 
             console.error(err);
-            alert("Erreur lors de l'ajout de la tâche"); 
+            const errorMsg = err.response?.data?.message || "Erreur lors de l'ajout de la tâche";
+            alert(errorMsg); 
         }
     });
 
@@ -208,7 +221,6 @@
             }
 
             filteredTasks.forEach(t => {
-               
                 const completeButton = t.status !== 'terminé' ? 
                     `<button onclick="completeTask('${t._id}', '${projectId}')" style="padding: 4px 8px; background: var(--success); color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 5px;">✓ Terminer</button>` : '';
 
@@ -233,9 +245,12 @@
                     </div>
                 `;
             });
-        } catch (err) { console.error(err); }
+        } catch (err) { 
+            console.error("Erreur chargement tâches:", err); 
+        }
     }
 
+    
     async function completeTask(taskId, projectId) {
         try {
             await axios.put(`${API_URL}/tasks/${taskId}`, { status: 'terminé' });
@@ -261,14 +276,17 @@
         }
     }
 
+    
     document.getElementById('projectSelector').addEventListener('change', (e) => loadTasks(e.target.value));
     document.getElementById('filterStatus').addEventListener('change', () => loadTasks(document.getElementById('projectSelector').value));
 
+    
     document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('token');
-        window.location.href = 'login.html';
+        window.location.href = '/login.html';
     });
 
+    
     window.onload = () => {
         loadDashboardMetrics();
         loadProjects();
