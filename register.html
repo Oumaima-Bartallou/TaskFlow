@@ -4,82 +4,85 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription - TaskFlow</title>
+    <style>
+        :root { 
+            --success: #27ae60; 
+            --dark: #2c3e50; 
+            --danger: #e74c3c;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: var(--dark); }
+        .container { max-width: 400px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin: 80px auto auto auto; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
+        .btn-submit { width: 100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        #msg { text-align: center; font-weight: bold; margin: 10px 0; height: 20px; }
+        .link-login { text-align: center; margin-top: 20px; font-size: 14px; }
+        .link-login a { color: var(--success); text-decoration: none; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-    <div class="auth-container">
-        <h2>Créer un compte TaskFlow 🚀</h2>
-        <p>Plateforme collaborative pour SMI S4</p>
+    <div class="container">
+        <h2 style="text-align: center; margin-bottom: 5px;">Créer un compte TaskFlow 🚀</h2>
+        <p style="text-align: center; color: #718096; margin-top: 0; margin-bottom: 25px;">Plateforme collaborative pour SMI S4</p>
+        
+        <div id="msg"></div>
 
-        <form id="registerForm">
-            <div class="form-group">
-                <label for="name">Nom complet :</label>
-                <input type="text" id="name" placeholder="Votre nom" required>
-            </div>
-
-            <div class="form-group">
-                <label for="email">Adresse Email :</label>
-                <input type="email" id="email" placeholder="exemple@domaine.com" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Mot de passe :</label>
-                <input type="password" id="password" placeholder="••••••••" required>
-            </div>
-
+        <form id="registerForm" onsubmit="handleRegister(event)">
+            <label style="font-weight: bold;" for="username">Nom d'utilisateur :</label>
+            <input type="text" id="username" placeholder="Chaimae" required>
+            
+            <label style="font-weight: bold;" for="email">Adresse Email :</label>
+            <input type="email" id="email" placeholder="exemple@smi.com" required>
+            
+            <label style="font-weight: bold;" for="password">Mot de passe :</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+            
             <button type="submit" class="btn-submit">S'inscrire</button>
         </form>
 
-        <p id="message" style="color: red; margin-top: 15px; font-weight: bold;"></p>
-
-        <p class="auth-switch">Vous avez déjà un compte ? <a href="login.html">Se connecter</a></p>
+        <div class="link-login">
+            Vous avez déjà un compte ? <a href="login.html">Se connecter</a>
+        </div>
     </div>
 
     <script>
-    const API_URL = "http://127.0.0.1:3000"; 
+        const API_REG_URL = "http://127.0.0.1:3000/api/auth/register";
 
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
-        e.preventDefault(); // Empêcher le rechargement de la page
-        
-        console.log("🚀 1. Formulaire soumis, JS activé.");
-
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const messageDiv = document.getElementById('message');
-
-        messageDiv.innerText = "Envoi en cours au serveur...";
-        messageDiv.style.color = "orange";
-
-        try {
-            console.log("📡 2. Envoi de la requête Fetch à : " + `${API_URL}/api/auth/register`);
+        async function handleRegister(event) {
+            event.preventDefault();
             
-            const res = await fetch(`${API_URL}/api/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password })
-            });
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const msgDiv = document.getElementById('msg');
+            
+            msgDiv.innerText = ""; 
 
-            console.log("📥 3. Réponse reçue du serveur. Status : " + res.status);
-            const data = await res.json();
+            try {
+                const res = await fetch(API_REG_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password }) 
+                });
 
-            if (res.ok) {
-                console.log("✅ 4. Compte créé avec succès dans la base de données !");
-                messageDiv.style.color = "green";
-                messageDiv.innerText = "Compte créé avec succès !";
-                alert("Compte créé avec succès !");
-                window.location.href = 'login.html';
-            } else {
-                console.warn("⚠️ 4. Le serveur a renvoyé une erreur :", data.message);
-                messageDiv.style.color = "red";
-                messageDiv.innerText = data.message || "Erreur lors de l'inscription";
+                const data = await res.json();
+
+                if (res.ok) {
+                    msgDiv.style.color = "green";
+                    msgDiv.innerText = data.message || "Compte créé ! Redirection...";
+                    setTimeout(() => {
+                        window.location.href = 'login.html'; 
+                    }, 1500);
+                } else {
+                    msgDiv.style.color = "red";
+                    msgDiv.innerText = data.message || "Erreur lors de l'inscription.";
+                }
+            } catch (err) {
+                console.error("Erreur inscription:", err);
+                msgDiv.style.color = "red";
+                msgDiv.innerText = "Erreur serveur lors de l'inscription.";
             }
-        } catch (err) {
-            console.error("❌ 4. Échec total de la connexion au serveur :", err);
-            messageDiv.style.color = "red";
-            messageDiv.innerText = "Erreur de connexion au serveur.";
         }
-    });
     </script>
 </body>
 </html>
