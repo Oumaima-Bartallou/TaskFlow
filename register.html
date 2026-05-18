@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>TaskFlow - Inscription</title>
     <style>
         :root { --primary: #3498db; --dark: #2c3e50; --success: #27ae60; --danger: #e74c3c; }
@@ -80,5 +81,88 @@
     });
 </script>
 
+=======
+    <title>Inscription - TaskFlow</title>
+    <style>
+        :root { 
+            --success: #27ae60; 
+            --dark: #2c3e50; 
+            --danger: #e74c3c;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: var(--dark); }
+        .container { max-width: 400px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin: 80px auto auto auto; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
+        .btn-submit { width: 100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        #msg { text-align: center; font-weight: bold; margin: 10px 0; height: 20px; }
+        .link-login { text-align: center; margin-top: 20px; font-size: 14px; }
+        .link-login a { color: var(--success); text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2 style="text-align: center; margin-bottom: 5px;">Créer un compte TaskFlow 🚀</h2>
+        <p style="text-align: center; color: #718096; margin-top: 0; margin-bottom: 25px;">Plateforme collaborative pour SMI S4</p>
+        
+        <div id="msg"></div>
+
+        <form id="registerForm" onsubmit="handleRegister(event)">
+            <label style="font-weight: bold;" for="username">Nom d'utilisateur :</label>
+            <input type="text" id="username" placeholder="Chaimae" required>
+            
+            <label style="font-weight: bold;" for="email">Adresse Email :</label>
+            <input type="email" id="email" placeholder="exemple@smi.com" required>
+            
+            <label style="font-weight: bold;" for="password">Mot de passe :</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+            
+            <button type="submit" class="btn-submit">S'inscrire</button>
+        </form>
+
+        <div class="link-login">
+            Vous avez déjà un compte ? <a href="login.html">Se connecter</a>
+        </div>
+    </div>
+
+    <script>
+        const API_REG_URL = "http://127.0.0.1:3000/api/auth/register";
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const msgDiv = document.getElementById('msg');
+            
+            msgDiv.innerText = ""; 
+
+            try {
+                const res = await fetch(API_REG_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password }) 
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    msgDiv.style.color = "green";
+                    msgDiv.innerText = data.message || "Compte créé ! Redirection...";
+                    setTimeout(() => {
+                        window.location.href = 'login.html'; 
+                    }, 1500);
+                } else {
+                    msgDiv.style.color = "red";
+                    msgDiv.innerText = data.message || "Erreur lors de l'inscription.";
+                }
+            } catch (err) {
+                console.error("Erreur inscription:", err);
+                msgDiv.style.color = "red";
+                msgDiv.innerText = "Erreur serveur lors de l'inscription.";
+            }
+        }
+    </script>
+>>>>>>> feature/membres
 </body>
 </html>
