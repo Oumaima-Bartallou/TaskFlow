@@ -18,19 +18,11 @@
             padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); gap: 20px;
         }
         .btn-logout { padding: 8px 16px; background-color: var(--danger); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; flex: 3; }
-        .stat-card { padding: 15px; border-radius: 12px; text-align: center; color: white; font-weight: bold; font-size: 14px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; flex: 3; }
+        .stat-card { padding: 12px; border-radius: 12px; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 13px; }
         .stat-projects { background: var(--primary); } .stat-assigned { background: var(--dark); } 
         .stat-completed { background: var(--success); } .stat-overdue { background: var(--danger); }
         .stat-card span { display: block; font-size: 24px; margin-top: 5px; font-weight: 800; }
-       
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 25px; }
-        .stat-card { padding: 12px; border-radius: 12px; text-align: center; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 13px; }
-        .stat-projects { background: var(--primary); }
-        .stat-assigned { background: var(--dark); }
-        .stat-completed { background: var(--success); }
-        .stat-overdue { background: var(--danger); }
-        .stat-card span { display: block; font-size: 24px; margin-top: 5px; }
 
         /* 🏢 Layout Grids */
         .workspace-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; max-width: 1100px; margin: 0 auto; }
@@ -44,25 +36,51 @@
 
         /* 📋 Task Cards */
         .task-card { background: #fff; border-left: 6px solid var(--primary); padding: 18px; margin-top: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .task-card.urgent { border-left-color: var(--danger); background: #fff5f5; }
         .task-card.completed { border-left-color: var(--success); opacity: 0.6; background: #f9f9f9; }
         .task-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-        .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; color: white; }
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; color: white; text-transform: uppercase; }
         .badge-haute { background: var(--danger); } .badge-moyenne { background: #f39c12; } .badge-basse { background: var(--success); }
 
-        /* 📁 Navigation Button Style */
+        /* 🔍 Recherche & Zone de Filtrage */
+        .filters-container { display: flex; flex-direction: column; gap: 10px; background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .filters-row { display: flex; gap: 10px; }
+        
+        /* 📄 Pagination Section */
+        .pagination-container { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 2px solid #edf2f7; }
+        .btn-page { padding: 8px 16px; background: var(--dark); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-page:disabled { background: #cbd5e1; cursor: not-allowed; }
+
         .btn-nav { margin: 20px auto; display: block; padding: 12px 24px; background: var(--dark); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .btn-nav:hover { background: #1a252f; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
 
 <header>
-    <div style="flex: 1; min-width: 200px;">
-        <h1 style="margin: 0; font-size: 26px;">TaskFlow 🚀</h1>
-        <p style="margin: 3px 0 0 0; color: #718096; font-size: 13px;">Plateforme collaborative pour SMI S4</p>
-        <button id="logoutBtn" class="btn-logout" style="margin-top: 10px;">Déconnexion</button>
+    <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 15px;">
+        <div>
+            <h1 style="margin: 0; font-size: 26px;">TaskFlow 🚀</h1>
+            <p style="margin: 3px 0 0 0; color: #718096; font-size: 13px;">Plateforme collaborative pour SMI S4</p>
+            <button id="logoutBtn" class="btn-logout" style="margin-top: 10px;">Déconnexion</button>
+        </div>
+
+        <div style="position: relative; display: inline-block; margin-left: 10px; margin-top: -15px;">
+            <button onclick="toggleNotifDropdown()" style="background: #f8fafc; border: 2px solid #edf2f7; font-size: 22px; cursor: pointer; position: relative; padding: 8px 12px; border-radius: 10px; transition: 0.2s;">
+                🔔 <span id="notifBadge" style="position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; display: none;">0</span>
+            </button>
+            
+            <div id="notifDropdown" style="display: none; position: absolute; left: 0; top: 50px; width: 300px; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 12px; z-index: 1000; padding: 15px; border: 1px solid #edf2f7;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: var(--dark); border-bottom: 2px solid #edf2f7; padding-bottom: 5px;">🔔 Nouvelles Notifications</h4>
+                <ul id="notifList" style="list-style: none; padding: 0; margin: 0; max-height: 150px; overflow-y: auto;">
+                    <li style="padding: 5px; text-align: center; color: gray; font-style: italic; font-size: 12px;">Aucune nouvelle notification.</li>
+                </ul>
+                
+                <h4 style="margin: 15px 0 10px 0; font-size: 14px; color: var(--gray); border-bottom: 2px solid #edf2f7; padding-bottom: 5px;">📦 Archives (LocalStorage)</h4>
+                <ul id="notifArchives" style="list-style: none; padding: 0; margin: 0; max-height: 150px; overflow-y: auto; color: var(--gray);">
+                    <li style="padding: 5px; text-align: center; font-style: italic; font-size: 11px;">Aucune notification archivée.</li>
+                </ul>
+            </div>
+        </div>
     </div>
     <div class="stats-grid">
         <div class="stat-card stat-projects">Projets Actifs <span id="countProjects">0</span></div>
@@ -86,10 +104,19 @@
         <select id="projectSelector">
             <option value="">-- Sélectionner un projet --</option>
         </select>
+
+        <hr style="border: 1px solid #edf2f7; margin: 20px 0;">
+        
+        <h3 style="font-size: 16px;">🪵 Historique du Projet</h3>
+        <div style="max-height: 250px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 10px; border: 2px solid #edf2f7;">
+            <ul id="activityFeed" style="list-style: none; padding: 0; margin: 0; font-size: 13px;">
+                <li style="color: var(--gray); text-align: center; font-style: italic; padding: 10px;">Veuillez sélectionner un projet pour voir l'historique.</li>
+            </ul>
+        </div>
     </div>
 
     <div class="panel">
-        <h3>🚀 (F3) Ajouter une nouvelle tâche</h3>
+        <h3>🚀 (F3 & F4) Ajouter une nouvelle tâche</h3>
         <form id="taskForm">
             <input type="text" id="taskTitle" placeholder="Titre de la tâche..." required>
             <textarea id="taskDesc" placeholder="Description détaillée (optionnel)..." rows="2"></textarea>
@@ -103,23 +130,45 @@
                 <option value="moyenne" selected>🟡 Moyenne</option>
                 <option value="haute">🔴 Haute</option>
             </select>
+
+            <label style="font-weight: bold; font-size: 14px;">👤 Assigner à un membre (F4) :</label>
+            <select id="taskAssignedTo" required>
+                <option value="">-- Charger les membres... --</option>
+            </select>
+
             <button type="submit" class="btn-action" style="background: #2ecc71;">Ajouter au planning</button>
         </form>
 
         <hr style="border: 1px solid #edf2f7; margin: 25px 0;">
 
-        <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0; min-width: 150px;">📋 Liste des Tâches</h3>
-            <select id="filterStatus" style="margin: 0; padding: 8px;">
-                <option value="tous">🔍 Filtrer par Statut: Tous</option>
-                <option value="à faire">📝 À faire</option>
-                <option value="en cours">⏳ En cours</option>
-                <option value="terminé">✅ Terminé</option>
-            </select>
+        <div class="filters-container">
+            <h3 style="margin: 0; font-size: 15px;">🔍 Recherche & Filtres Avancés (F6)</h3>
+            <input type="text" id="searchTask" placeholder="🔍 Rechercher par mot-clé (titre, description)..." style="margin: 5px 0;">
+            <div class="filters-row">
+                <select id="filterStatus" style="margin: 0;">
+                    <option value="">📊 Tous les statuts</option>
+                    <option value="à faire">📝 À faire</option>
+                    <option value="en cours">⏳ En cours</option>
+                    <option value="terminé">✅ Terminé</option>
+                </select>
+                <select id="filterPriority" style="margin: 0;">
+                    <option value="">⚡ Toutes les priorités</option>
+                    <option value="basse">🟢 Basse</option>
+                    <option value="moyenne">🟡 Moyenne</option>
+                    <option value="haute">🔴 Haute</option>
+                </select>
+            </div>
         </div>
         
+        <h3>📋 Liste des Tâches</h3>
         <div id="tasksContainer">
             <p style="color: var(--gray); text-align: center; font-style: italic;">Veuillez sélectionner un projet pour voir les tâches.</p>
+        </div>
+
+        <div class="pagination-container">
+            <button id="btnPrev" class="btn-page" disabled>◀ Précédent</button>
+            <span id="pageInfo" style="font-size: 13px; color: var(--gray); font-weight: bold;">Page 1 sur 1</span>
+            <button id="btnNext" class="btn-page" disabled>Suivant ▶</button>
         </div>
     </div>
 </div>
@@ -127,30 +176,41 @@
 <button class="btn-nav" onclick="window.location.href='/projets.html'">Accéder à mes projets & Membres 📁</button>
 
 <script>
-    // --- 1. AUTHENTIFICATION ---
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = '/login.html';
-    } else {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-
-    const API_URL = '/api';
+    // --- 1. CONFIGURATION INITIALE ---
+    const API_URL = 'http://localhost:3000/api';
+    let currentPage = 1;
+    const itemsPerPage = 5; 
+    let localNotifications = []; 
 
     // --- 2. CHARGEMENT DU DASHBOARD ---
     async function loadDashboardMetrics() {
         try {
-            const res = await axios.get(`${API_URL}/dashboard`);
+            const res = await axios.get(`${API_URL}/dashboard?t=${new Date().getTime()}`);
             document.getElementById('countProjects').innerText = res.data.activeProjects || 0;
-            document.getElementById('countAssigned').innerText = res.data.assignedTasks || res.data.totalAssigned || 0;
+            document.getElementById('countAssigned').innerText = res.data.totalAssigned || 0;
             document.getElementById('countCompleted').innerText = res.data.completedTasks || 0;
-            document.getElementById('countOverdue').innerText = res.data.delayedTasks || res.data.overdueTasks || 0;
+            document.getElementById('countOverdue').innerText = res.data.overdueTasks || 0;
         } catch (err) { 
             console.error("Erreur Dashboard Metrics:", err); 
         }
     }
 
-    // --- 3. CREATION D'UN PROJET ---
+    // --- 3. CHARGEMENT DES UTILISATEURS POUR L'ASSIGNATION ---
+    async function loadUsersForAssignation() {
+        try {
+            const res = await axios.get(`${API_URL}/auth/users?t=${new Date().getTime()}`); 
+            const select = document.getElementById('taskAssignedTo');
+            select.innerHTML = '<option value="">-- Choisir un membre --</option>';
+            
+            res.data.forEach(user => {
+                select.innerHTML += `<option value="${user._id}">👤 ${user.username} (${user.email})</option>`;
+            });
+        } catch (err) {
+            console.error("Erreur chargement utilisateurs pour assignation:", err);
+        }
+    }
+
+    // --- 4. CREATION D'UN PROJET ---
     document.getElementById('projectForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         try {
@@ -168,10 +228,10 @@
         }
     });
 
-    // --- 4. CHARGEMENT DES PROJETS DANS LE SELECTOR ---
+    // --- 5. CHARGEMENT DES PROJETS DANS LE SELECTOR ---
     async function loadProjects() {
         try {
-            const res = await axios.get(`${API_URL}/projects`);
+            const res = await axios.get(`${API_URL}/projects?t=${new Date().getTime()}`);
             const selector = document.getElementById('projectSelector');
             selector.innerHTML = '<option value="">-- Sélectionner un projet --</option>';
             res.data.forEach(p => {
@@ -182,7 +242,7 @@
         }
     }
 
-    // --- 5. CREATION D'UNE TACHE ---
+    // --- 6. CREATION D'UNE TACHE AVEC ASSIGNATION ---
     document.getElementById('taskForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const projectId = document.getElementById('projectSelector').value;
@@ -197,51 +257,76 @@
                 description: document.getElementById('taskDesc').value || 'Aucune description',
                 deadline: formattedDeadline, 
                 priority: document.getElementById('taskPriority').value,
+                assignedTo: document.getElementById('taskAssignedTo').value, 
                 project: projectId
             });
             document.getElementById('taskForm').reset();
-            alert("Tâche ajoutée avec succès ! 🚀");
+            alert("Tâche ajoutée et assignée avec succès ! 🚀");
+            currentPage = 1; 
             loadTasks(projectId); 
             loadDashboardMetrics();
+            loadProjectActivities(); 
+            fetchNotifications(); 
         } catch (err) { 
             console.error(err);
             alert(err.response?.data?.message || "Erreur lors de l'ajout de la tâche"); 
         }
     });
 
-    // --- 6. CHARGEMENT DES TACHES FILTREES ---
+    // --- 7. CHARGEMENT DES TACHES FILTREES ET PAGINEES ---
     async function loadTasks(projectId) {
         if (!projectId) {
             document.getElementById('tasksContainer').innerHTML = '<p style="color: var(--gray); text-align: center; font-style: italic;">Veuillez sélectionner un projet pour voir les tâches.</p>';
+            document.getElementById('btnPrev').disabled = true;
+            document.getElementById('btnNext').disabled = true;
+            document.getElementById('pageInfo').innerText = "Page 1 sur 1";
             return;
         }
         try {
-            const filter = document.getElementById('filterStatus').value;
+            const search = document.getElementById('searchTask').value;
+            const status = document.getElementById('filterStatus').value;
+            const priority = document.getElementById('filterPriority').value;
             
-            const url = filter === 'tous' ? `${API_URL}/tasks?project=${projectId}` : `${API_URL}/tasks?project=${projectId}&status=${filter}`;
+            let url = `${API_URL}/tasks?project=${projectId}&page=${currentPage}&limit=${itemsPerPage}&t=${new Date().getTime()}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            if (status) url += `&status=${status}`;
+            if (priority) url += `&priority=${priority}`;
             
             const res = await axios.get(url);
             const container = document.getElementById('tasksContainer');
             container.innerHTML = '';
 
-            if (res.data.length === 0) {
+            const tasks = res.data.data || res.data; 
+            const totalPages = res.data.totalPages || 1;
+
+            if (!tasks || tasks.length === 0) {
                 container.innerHTML = '<p style="text-align:center; color:gray; font-style: italic;">Aucune tâche trouvée.</p>';
+                document.getElementById('pageInfo').innerText = `Page ${currentPage} sur ${totalPages}`;
+                document.getElementById('btnNext').disabled = true;
+                document.getElementById('btnPrev').disabled = true;
                 return;
             }
 
-            res.data.forEach(t => {
+            tasks.forEach(t => {
                 const completeButton = t.status !== 'terminé' ? 
                     `<button onclick="completeTask('${t._id}', '${projectId}')" style="padding: 4px 8px; background: var(--success); color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 5px;">✓ Terminer</button>` : '';
 
                 const isCompleted = t.status === 'terminé';
+                const memberName = t.assignedTo ? t.assignedTo.username : 'Non assignée'; 
+                const memberEmail = t.assignedTo ? `(${t.assignedTo.email})` : '';
 
                 container.innerHTML += `
                     <div class="task-card ${isCompleted ? 'completed' : ''}" style="border-left-color: ${t.priority === 'haute' ? 'var(--danger)' : t.priority === 'moyenne' ? '#f39c12' : 'var(--success)'};">
                         <div class="task-header">
                             <span>${t.title}</span>
-                            <span class="badge badge-${t.priority}">${t.priority.toUpperCase()}</span>
+                            <span class="badge badge-${t.priority}">${t.priority}</span>
                         </div>
                         <p style="margin: 8px 0; font-size:14px; color:#4a5568;">${t.description}</p>
+                        
+                        <div style="margin: 5px 0; font-size: 12px; color: var(--dark); font-weight: bold;">
+                            🧑‍💻 Assignée à : <span style="color: var(--primary);">${memberName} ${memberEmail}</span>
+                        </div>
+
                         <div style="font-size:12px; color:gray; display:flex; justify-content:space-between; align-items: center; margin-top: 10px;">
                             <span>📅 Limite: ${new Date(t.deadline).toLocaleDateString('fr-FR')}</span>
                             <span style="font-weight:bold; color:var(--dark);">⚙️ Statut: <span style="color:${t.status === 'terminé' ? 'var(--success)' : '#f39c12'};">${t.status}</span></span>
@@ -255,29 +340,40 @@
                     </div>
                 `;
             });
+
+            document.getElementById('pageInfo').innerText = `Page ${currentPage} sur ${totalPages}`;
+            document.getElementById('btnPrev').disabled = (currentPage === 1);
+            document.getElementById('btnNext').disabled = (currentPage >= totalPages);
+
         } catch (err) { 
             console.error("Erreur chargement tâches:", err); 
         }
     }
 
-    // --- 7. CHANGER LE STATUT EN TERMINÉ ---
-    
+    // --- 8. CHANGER LE STATUT EN TERMINÉ ---
     async function completeTask(taskId, projectId) {
-    try {
-       
-        await axios.put(`${API_URL}/tasks/${taskId}`, { status: 'terminé' });
-        
-        
-        loadTasks(projectId); 
-        loadDashboardMetrics(); 
-        alert("Tâche terminée avec succès ! 🎉");
-    } catch (err) {
-        console.error("Erreur 404 probleme au repertoire!", err);
-        alert("Impossible de modifier la tâche. Vérifiez que le Backend est bien à jour.");
-    }
+        try {
+            await axios.patch(`${API_URL}/tasks/${taskId}/status`, { status: 'terminé' });
+            loadTasks(projectId); 
+            loadDashboardMetrics(); 
+            loadProjectActivities(); 
+            fetchNotifications(); 
+            alert("Tâche terminée avec succès ! 🎉");
+        } catch (err) {
+            console.error("Erreur PATCH route, tentative avec PUT:", err);
+            try {
+                await axios.put(`${API_URL}/tasks/${taskId}`, { status: 'terminé' });
+                loadTasks(projectId); 
+                loadDashboardMetrics();
+                loadProjectActivities(); 
+                fetchNotifications();
+            } catch (putErr) {
+                alert("Impossible de modifier la tâche. Vérifiez vos routes backend.");
+            }
+        }
     }
 
-    // --- 8. SUPPRIMER UNE TACHE ---
+    // --- 9. SUPPRIMER UNE TACHE ---
     async function deleteTask(taskId, projectId) {
         if (confirm("Voulez-vous vraiment supprimer cette tâche ?")) {
             try {
@@ -285,6 +381,7 @@
                 alert("Tâche supprimée avec succès !");
                 loadTasks(projectId); 
                 loadDashboardMetrics(); 
+                loadProjectActivities(); 
             } catch (err) {
                 console.error(err);
                 alert("Erreur lors de la suppression de la tâche");
@@ -292,19 +389,199 @@
         }
     }
 
-    // --- 9. EVENT LISTENERS ---
-    document.getElementById('projectSelector').addEventListener('change', (e) => loadTasks(e.target.value));
-    document.getElementById('filterStatus').addEventListener('change', () => loadTasks(document.getElementById('projectSelector').value));
+    // --- 10.🪵 HISTORIQUE DU PROJET ---
+    async function loadProjectActivities() {
+        const projectId = document.getElementById('projectSelector').value;
+        if (!projectId) {
+            document.getElementById('activityFeed').innerHTML = '<li style="color: var(--gray); text-align: center; font-style: italic; padding: 10px;">Veuillez sélectionner un projet pour voir l\'historique.</li>';
+            return;
+        } 
+
+        try {
+            const res = await axios.get(`${API_URL}/projects/${projectId}/activities?t=${new Date().getTime()}`);
+            const activityFeed = document.getElementById('activityFeed');
+            activityFeed.innerHTML = ''; 
+
+            if (!res.data || res.data.length === 0) {
+                document.getElementById('activityFeed').innerHTML = '<li style="color: var(--gray); text-align: center; font-style: italic; padding: 10px;">Aucune activité enregistrée.</li>';
+                return;
+            }
+
+            res.data.forEach(act => {
+                const username = act.user ? act.user.username : 'Membre';
+                const dateAct = new Date(act.timestamp || act.createdAt);
+                const timeString = dateAct.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+                let icon = '📝';
+                if (act.actionType === 'changement_statut') icon = '🔄';
+                if (act.actionType === 'suppression_tâche') icon = '❌';
+
+                activityFeed.innerHTML += `
+                    <li style="padding: 8px; border-bottom: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: start; gap: 10px;">
+                        <div>${icon} <strong>${username}</strong>: ${act.details}</div>
+                        <span style="font-size: 11px; color: var(--gray); white-space: nowrap;">à ${timeString}</span>
+                    </li>
+                `;
+            });
+        } catch (err) {
+            console.error("Erreur lors du chargement de l'historique:", err);
+        }
+    }
+
+    // --- 11. 🔔 GESTION DES NOTIFICATIONS ---
+    function toggleNotifDropdown() {
+        const dropdown = document.getElementById('notifDropdown');
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'block';
+            displayArchivedNotifications(); 
+        } else {
+            dropdown.style.display = 'none';
+        }
+    }
+
+    async function fetchNotifications() {
+        if (!localStorage.getItem('token')) return; 
+        try {
+            const res = await axios.get(`${API_URL}/notifications?t=${new Date().getTime()}`, {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+            localNotifications = res.data;
+            updateNotificationUI();
+        } catch (err) {
+            console.error("Erreur Polling Notifications:", err);
+        }
+    }
+
+    
+    function updateNotificationUI() {
+        const badge = document.getElementById('notifBadge');
+        const list = document.getElementById('notifList');
+        
+        if (localNotifications.length > 0) {
+            badge.innerText = localNotifications.length;
+            badge.style.display = 'inline';
+        } else {
+            badge.style.display = 'none';
+        }
+
+        list.innerHTML = '';
+        if (localNotifications.length === 0) {
+            list.innerHTML = '<li style="padding: 5px; text-align: center; color: gray; font-style: italic; font-size: 12px;">Aucune nouvelle notification.</li>';
+            return;
+        }
+
+        localNotifications.forEach(notif => {
+            let icon = '🔔';
+            if (notif.type === 'assignation_tâche') icon = '📌';
+            if (notif.type === 'statut_modifié') icon = '🔄';
+
+            const li = document.createElement('li');
+            li.style = "padding: 8px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; gap: 5px; font-size: 12px;";
+            
+            const span = document.createElement('span');
+            span.innerHTML = `${icon} ${notif.message}`;
+            
+            const btn = document.createElement('button');
+            btn.innerText = "Lue";
+            btn.style = "background: var(--success); color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px;";
+            
+            btn.onclick = () => markAsRead(notif._id, notif.message);
+            
+            li.appendChild(span);
+            li.appendChild(btn);
+            list.appendChild(li);
+        });
+    }
+
+    async function markAsRead(id, message) {
+        if (!id || id === 'undefined' || id === '[object Object]') {
+            console.error("❌ Error: ID de notification invalide !");
+            return;
+        }
+
+        try {
+            await axios.patch(`${API_URL}/notifications/${id}/read?t=${new Date().getTime()}`, {}, {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+            
+            let archives = JSON.parse(localStorage.getItem('archived_notifications')) || [];
+            archives.push({ id, message, readAt: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) });
+            localStorage.setItem('archived_notifications', JSON.stringify(archives));
+
+            localNotifications = localNotifications.filter(n => n._id !== id);
+            updateNotificationUI();
+            displayArchivedNotifications();
+            loadDashboardMetrics(); 
+        } catch (err) {
+            console.error(err);
+            alert("Erreur lors de la mise à jour de la notification.");
+        }
+    }
+
+    function displayArchivedNotifications() {
+        const archiveList = document.getElementById('notifArchives');
+        let archives = JSON.parse(localStorage.getItem('archived_notifications')) || [];
+        
+        archiveList.innerHTML = '';
+        if (archives.length === 0) {
+            archiveList.innerHTML = '<li style="padding: 5px; text-align: center; font-style: italic; font-size: 11px;">Aucune notification archivée.</li>';
+            return;
+        }
+        
+        archives.slice(-4).reverse().forEach(arch => {
+            archiveList.innerHTML += `
+                <li style="padding: 5px 8px; border-bottom: 1px dashed #edf2f7; font-size: 11px; color: var(--gray);">
+                    ✅ ${arch.message} <span style="font-size: 9px; color: #a0aec0;">(${arch.readAt})</span>
+                </li>
+            `;
+        });
+    }
+
+    setInterval(fetchNotifications, 15000);
+
+    // --- 12. EVENT LISTENERS POUR RECHERCHE ET PAGINATION ---
+    document.getElementById('projectSelector').addEventListener('change', (e) => {
+        currentPage = 1; 
+        loadTasks(e.target.value);
+        loadProjectActivities(); 
+    });
+
+    document.getElementById('filterStatus').addEventListener('change', () => { currentPage = 1; loadTasks(document.getElementById('projectSelector').value); });
+    document.getElementById('filterPriority').addEventListener('change', () => { currentPage = 1; loadTasks(document.getElementById('projectSelector').value); });
+    document.getElementById('searchTask').addEventListener('input', () => { currentPage = 1; loadTasks(document.getElementById('projectSelector').value); });
+
+    document.getElementById('btnPrev').addEventListener('click', () => {
+        if (currentPage > 1) { currentPage--; loadTasks(document.getElementById('projectSelector').value); }
+    });
+    document.getElementById('btnNext').addEventListener('click', () => {
+        currentPage++; loadTasks(document.getElementById('projectSelector').value);
+    });
 
     document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('token');
         window.location.href = '/login.html';
     });
 
-    // --- 10. CHARGEMENT INITIAL ---
+    // --- 13. CHARGEMENT INITIAL (MÉTHODE SÉCURISÉE) ---
     window.onload = () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+            return;
+        } else {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+
         loadDashboardMetrics();
         loadProjects();
+        loadUsersForAssignation(); 
+        fetchNotifications(); 
     };
 </script>
 </body>

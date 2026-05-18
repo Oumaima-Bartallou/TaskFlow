@@ -1,9 +1,9 @@
 const express = require('express');
-const router = express.Router();
+const router = report = express.Router();
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 
-// GET /api/dashboard 
+// GET /api/dashboard - (Mise à jour F5 : Aggregation Pipeline)
 router.get('/', async (req, res) => {
   try {
     const now = new Date();
@@ -12,14 +12,29 @@ router.get('/', async (req, res) => {
     const activeProjectsCount = await Project.countDocuments();
 
     
-    const totalAssigned = await Task.countDocuments();
-    const completedTasks = await Task.countDocuments({ status: 'terminé' });
+    const totalAssignedAgg = await Task.aggregate([
+      { $count: "count" }
+    ]);
+    const totalAssigned = totalAssignedAgg[0]?.count || 0;
+
     
+    const completedTasksAgg = await Task.aggregate([
+      { $match: { status: 'terminé' } },
+      { $count: "count" }
+    ]);
+    const completedTasks = completedTasksAgg[0]?.count || 0;
+
     
-    const overdueTasks = await Task.countDocuments({
-      status: { $ne: 'terminé' },
-      deadline: { $lt: now }
-    });
+    const overdueTasksAgg = await Task.aggregate([
+      { 
+        $match: { 
+          status: { $ne: 'terminé' }, 
+          deadline: { $lt: now } 
+        } 
+      },
+      { $count: "count" }
+    ]);
+    const overdueTasks = overdueTasksAgg[0]?.count || 0;
 
     
     const activeTasks = await Task.find({ status: { $ne: "terminé" } })

@@ -60,4 +60,15 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/users', async (req, res) => {
+  try {
+    
+    const users = await User.find({}, 'username email'); 
+    res.status(200).json(users);
+  } catch (err) {
+    console.error("Erreur Fetch Users:", err);
+    res.status(500).json({ message: "Erreur lors de la récupération des membres" });
+  }
+});
+
 module.exports = router;
