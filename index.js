@@ -12,7 +12,6 @@ const app = express();
 app.use(cors());
 app.use(express.json()); 
 
-
 app.use(express.static(path.join(__dirname))); 
 app.use(express.static(path.join(__dirname, 'public'))); 
 
@@ -32,7 +31,6 @@ app.get('/login.html', (req, res) => {
 });
 
 app.get('/projets.html', (req, res) => {
-    
     res.sendFile(path.join(__dirname, 'projects.html')); 
 });
 
@@ -48,7 +46,7 @@ app.use('/api/projects', require('./routes/projects'));
 app.use('/api/tasks', require('./routes/tasks'));
 
 
-app.use('/api/notifications', require('./routes/notificationBackendroutes'));
+app.use('/api/notifications', require('./routes/notificationBackendRoutes'));
 
 app.use('/api', require('./routes/activityBackendRoutes')); 
 
