@@ -35,7 +35,9 @@
         .btn-action:hover { background: #2980b9; }
 
         /* 📋 Task Cards */
-        .task-card { background: #f8fafc; border-left: 5px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .task-card { background: #fff; border-left: 6px solid var(--primary); padding: 18px; margin-top: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .task-card.urgent { border-left-color: var(--danger); background: #fff5f5; }
+        .task-card.completed { border-left-color: var(--success); opacity: 0.6; background: #f9f9f9; }
         .task-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; color: white; }
         .badge-haute { background: var(--danger); } .badge-moyenne { background: #f39c12; } .badge-basse { background: var(--success); }
@@ -117,7 +119,7 @@
 <button class="btn-nav" onclick="window.location.href='/projets.html'">Accéder à mes projets & Membres 📁</button>
 
 <script>
-    
+    // --- 1. AUTHENTIFICATION ---
     const token = localStorage.getItem('token');
     if (!token) {
         window.location.href = '/login.html';
@@ -127,39 +129,38 @@
 
     const API_URL = '/api';
 
-    
+    // --- 2. CHARGEMENT DU DASHBOARD ---
     async function loadDashboardMetrics() {
         try {
             const res = await axios.get(`${API_URL}/dashboard`);
             document.getElementById('countProjects').innerText = res.data.activeProjects || 0;
-            document.getElementById('countAssigned').innerText = res.data.totalAssigned || 0;
+            document.getElementById('countAssigned').innerText = res.data.assignedTasks || res.data.totalAssigned || 0;
             document.getElementById('countCompleted').innerText = res.data.completedTasks || 0;
-            document.getElementById('countOverdue').innerText = res.data.overdueTasks || 0;
+            document.getElementById('countOverdue').innerText = res.data.delayedTasks || res.data.overdueTasks || 0;
         } catch (err) { 
             console.error("Erreur Dashboard Metrics:", err); 
         }
     }
 
-   
+    // --- 3. CREATION D'UN PROJET ---
     document.getElementById('projectForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         try {
             await axios.post(`${API_URL}/projects`, {
                 title: document.getElementById('projTitle').value,
-                description: document.getElementById('projDesc').value
+                description: document.getElementById('projDesc').value || ''
             });
             document.getElementById('projectForm').reset();
+            alert("Projet créé avec succès ! 🎉");
             loadProjects(); 
             loadDashboardMetrics();
-            alert("Projet créé avec succès ! 🎉");
         } catch (err) { 
             console.error(err);
-            const errorMsg = err.response?.data?.message || "Erreur lors de la création du projet";
-            alert(errorMsg);
+            alert(err.response?.data?.message || "Erreur lors de la création du projet");
         }
     });
 
-    
+    // --- 4. CHARGEMENT DES PROJETS DANS LE SELECTOR ---
     async function loadProjects() {
         try {
             const res = await axios.get(`${API_URL}/projects`);
@@ -173,7 +174,7 @@
         }
     }
 
-    
+    // --- 5. CREATION D'UNE TACHE ---
     document.getElementById('taskForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const projectId = document.getElementById('projectSelector').value;
@@ -191,17 +192,16 @@
                 project: projectId
             });
             document.getElementById('taskForm').reset();
+            alert("Tâche ajoutée avec succès ! 🚀");
             loadTasks(projectId); 
             loadDashboardMetrics();
-            alert("Tâche ajoutée avec succès ! 🚀");
         } catch (err) { 
             console.error(err);
-            const errorMsg = err.response?.data?.message || "Erreur lors de l'ajout de la tâche";
-            alert(errorMsg); 
+            alert(err.response?.data?.message || "Erreur lors de l'ajout de la tâche"); 
         }
     });
 
-    
+    // --- 6. CHARGEMENT DES TACHES FILTREES ---
     async function loadTasks(projectId) {
         if (!projectId) {
             document.getElementById('tasksContainer').innerHTML = '<p style="color: var(--gray); text-align: center; font-style: italic;">Veuillez sélectionner un projet pour voir les tâches.</p>';
@@ -209,23 +209,26 @@
         }
         try {
             const filter = document.getElementById('filterStatus').value;
-            const res = await axios.get(`${API_URL}/tasks?project=${projectId}`);
+            
+            const url = filter === 'tous' ? `${API_URL}/tasks?project=${projectId}` : `${API_URL}/tasks?project=${projectId}&status=${filter}`;
+            
+            const res = await axios.get(url);
             const container = document.getElementById('tasksContainer');
             container.innerHTML = '';
 
-            const filteredTasks = res.data.filter(t => filter === 'tous' || t.status === filter);
-
-            if (filteredTasks.length === 0) {
+            if (res.data.length === 0) {
                 container.innerHTML = '<p style="text-align:center; color:gray; font-style: italic;">Aucune tâche trouvée.</p>';
                 return;
             }
 
-            filteredTasks.forEach(t => {
+            res.data.forEach(t => {
                 const completeButton = t.status !== 'terminé' ? 
                     `<button onclick="completeTask('${t._id}', '${projectId}')" style="padding: 4px 8px; background: var(--success); color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 5px;">✓ Terminer</button>` : '';
 
+                const isCompleted = t.status === 'terminé';
+
                 container.innerHTML += `
-                    <div class="task-card" style="border-left-color: ${t.priority === 'haute' ? 'var(--danger)' : t.priority === 'moyenne' ? '#f39c12' : 'var(--success)'}; position: relative;">
+                    <div class="task-card ${isCompleted ? 'completed' : ''}" style="border-left-color: ${t.priority === 'haute' ? 'var(--danger)' : t.priority === 'moyenne' ? '#f39c12' : 'var(--success)'};">
                         <div class="task-header">
                             <span>${t.title}</span>
                             <span class="badge badge-${t.priority}">${t.priority.toUpperCase()}</span>
@@ -234,7 +237,6 @@
                         <div style="font-size:12px; color:gray; display:flex; justify-content:space-between; align-items: center; margin-top: 10px;">
                             <span>📅 Limite: ${new Date(t.deadline).toLocaleDateString('fr-FR')}</span>
                             <span style="font-weight:bold; color:var(--dark);">⚙️ Statut: <span style="color:${t.status === 'terminé' ? 'var(--success)' : '#f39c12'};">${t.status}</span></span>
-                            
                             <div>
                                 ${completeButton}
                                 <button onclick="deleteTask('${t._id}', '${projectId}')" style="padding: 4px 8px; background: var(--danger); color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px;">
@@ -250,10 +252,11 @@
         }
     }
 
-    
+    // --- 7. CHANGER LE STATUT EN TERMINÉ ---
     async function completeTask(taskId, projectId) {
         try {
-            await axios.put(`${API_URL}/tasks/${taskId}`, { status: 'terminé' });
+          
+            await axios.patch(`${API_URL}/tasks/${taskId}/status`, { status: 'terminé' });
             loadTasks(projectId); 
             loadDashboardMetrics(); 
         } catch (err) {
@@ -262,6 +265,7 @@
         }
     }
 
+    // --- 8. SUPPRIMER UNE TACHE ---
     async function deleteTask(taskId, projectId) {
         if (confirm("Voulez-vous vraiment supprimer cette tâche ?")) {
             try {
@@ -276,17 +280,16 @@
         }
     }
 
-    
+    // --- 9. EVENT LISTENERS ---
     document.getElementById('projectSelector').addEventListener('change', (e) => loadTasks(e.target.value));
     document.getElementById('filterStatus').addEventListener('change', () => loadTasks(document.getElementById('projectSelector').value));
 
-    
     document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('token');
         window.location.href = '/login.html';
     });
 
-    
+    // --- 10. CHARGEMENT INITIAL ---
     window.onload = () => {
         loadDashboardMetrics();
         loadProjects();
