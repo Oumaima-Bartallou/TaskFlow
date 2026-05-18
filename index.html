@@ -261,16 +261,20 @@
     }
 
     // --- 7. CHANGER LE STATUT EN TERMINÉ ---
+    
     async function completeTask(taskId, projectId) {
-        try {
-          
-            await axios.patch(`${API_URL}/tasks/${taskId}/status`, { status: 'terminé' });
-            loadTasks(projectId); 
-            loadDashboardMetrics(); 
-        } catch (err) {
-            console.error(err);
-            alert("Erreur lors de la mise à jour de la tâche");
-        }
+    try {
+       
+        await axios.put(`${API_URL}/tasks/${taskId}`, { status: 'terminé' });
+        
+        
+        loadTasks(projectId); 
+        loadDashboardMetrics(); 
+        alert("Tâche terminée avec succès ! 🎉");
+    } catch (err) {
+        console.error("Erreur 404 probleme au repertoire!", err);
+        alert("Impossible de modifier la tâche. Vérifiez que le Backend est bien à jour.");
+    }
     }
 
     // --- 8. SUPPRIMER UNE TACHE ---
