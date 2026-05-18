@@ -4,82 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - TaskFlow</title>
+    <style>
+        :root { 
+            --primary: #3498db; 
+            --dark: #2c3e50; 
+            --danger: #e74c3c;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: var(--dark); }
+        .container { max-width: 400px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin: 100px auto auto auto; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; }
+        .btn-submit { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        #error-msg { text-align: center; color: var(--danger); font-weight: bold; margin: 10px 0; height: 20px; }
+        .link-register { text-align: center; margin-top: 20px; font-size: 14px; }
+        .link-register a { color: var(--primary); text-decoration: none; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-    <div class="auth-container">
-        <h2>Se connecter à TaskFlow 🔐</h2>
-        <p>Plateforme collaborative pour SMI S4</p>
+    <div class="container">
+        <h2 style="text-align: center; margin-bottom: 5px;">Se connecter à TaskFlow 🔐</h2>
+        <p style="text-align: center; color: #718096; margin-top: 0; margin-bottom: 25px;">Plateforme collaborative pour SMI S4</p>
+        
+        <div id="error-msg"></div>
 
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Adresse Email :</label>
-                <input type="email" id="email" placeholder="exemple@domaine.com" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Mot de passe :</label>
-                <input type="password" id="password" placeholder="••••••••" required>
-            </div>
-
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <label style="font-weight: bold;" for="email">Adresse Email :</label>
+            <input type="email" id="email" placeholder="exemple@smi.com" required>
+            
+            <label style="font-weight: bold;" for="password">Mot de passe :</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+            
             <button type="submit" class="btn-submit">Se connecter</button>
         </form>
 
-        <p id="message" style="color: red; margin-top: 15px; font-weight: bold;"></p>
-
-        <p class="auth-switch">Vous n'avez pas de compte ? <a href="register.html">S'inscrire</a></p>
+        <div class="link-register">
+            Vous n'avez pas de compte ? <a href="register.html">S'inscrire</a>
+        </div>
     </div>
 
     <script>
-    
-    const API_URL = "http://127.0.0.1:3000"; 
+        const API_AUTH_URL = "http://127.0.0.1:3000/api/auth/login";
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault(); 
-        
-        console.log("🚀 1. Formulaire Login soumis.");
-
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const messageDiv = document.getElementById('message');
-
-        messageDiv.innerText = "Connexion en cours...";
-        messageDiv.style.color = "orange";
-
-        try {
+        async function handleLogin(event) {
+            event.preventDefault(); 
             
-            console.log("📡 2. Envoi de la requête Login à : " + `${API_URL}/api/auth/login`);
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-msg');
             
-            const res = await fetch(`${API_URL}/api/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+            errorDiv.innerText = ""; 
 
-            console.log("📥 3. Réponse reçue. Status : " + res.status);
-            const data = await res.json();
+            try {
+                const res = await fetch(API_AUTH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-            if (res.ok) {
-                console.log("✅ 4. Connexion réussie ! Token reçu.");
-                messageDiv.style.color = "green";
-                messageDiv.innerText = "Connexion réussie ! Redirection...";
-                
-                
-                if(data.token) localStorage.setItem('token', data.token);
-                
-                alert("Connexion réussie !");
-                window.location.href = 'index.html'; 
-            } else {
-                console.warn("⚠️ 4. Échec de connexion :", data.message);
-                messageDiv.style.color = "red";
-                messageDiv.innerText = data.message || "Email ou mot de passe incorrect.";
+                const data = await res.json();
+
+                if (res.ok) {
+                    
+                    localStorage.setItem('token', data.token);
+                    
+                    
+                    window.location.href = 'projets.html'; 
+                } else {
+                    
+                    errorDiv.innerText = data.message || "Email ou mot de passe incorrect !";
+                }
+            } catch (err) {
+                console.error("Erreur connexion:", err);
+                errorDiv.innerText = "Erreur serveur lors de la connexion.";
             }
-        } catch (err) {
-            console.error("❌ 4. Erreur lors du Login :", err);
-            messageDiv.style.color = "red";
-            messageDiv.innerText = "Erreur de connexion au serveur.";
         }
-    });
     </script>
 </body>
 </html>
